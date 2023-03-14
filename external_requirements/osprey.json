@@ -1,1 +1,4 @@
-{"CabinetOutput" : "CabinetPrecomputedOutput"}
+{
+    "subject_dir" : "BidsSubject",
+    "CabinetOutput" : "CabinetPrecomputedOutput"
+}
