@@ -1,0 +1,6 @@
+{"T1" : {"T1w.nii.gz" : true, "rec-undistorted" : false, "acq-svslocalizer" : false},
+"FMRI" : {"bold.nii.gz" : true, "rec-undistorted" : false, "rec-biascorrected" : false},
+"AP_FMAP" : {"epi.nii.gz" : true, "dir-AP" : true},
+"PA_FMAP" : {"epi.nii.gz" : true, "dir-PA" : true},
+"SBREF" : {"sbref.nii.gz" : true}
+}
