@@ -34,5 +34,6 @@
     "stop_on_first_crash": "0",
     "notrack": "0",
     "sloppy": "0",
-    "fd_radius": "45"
+    "fd_radius": "45",
+    "age_months": "3"
 }
