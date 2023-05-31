@@ -654,7 +654,7 @@ def grab_json(json_config_location, pipeline_name):
     else:
         #Grab config file from processing_configurations folder which should be in the same directory as this script
         #Later will need to get rid of HBCD_CBRAIN_PROCESING reference
-        json_config_location = os.path.join(pathlib.Path().absolute().parent.resolve(), 'processing_configurations/{}.json'.format(pipeline_name))
+        json_config_location = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'processing_configurations', '{}.json'.format(pipeline_name))
         if os.path.exists(json_config_location) == False:
             raise NameError('Error: expected json configuration for {} at {}'.format(pipeline_name, json_config_location))
     with open(json_config_location, 'r') as f:
@@ -1158,16 +1158,16 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     
     
     #Load different json files that are the same for each subject
-    requirements_files = glob.glob(os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'processing_prerequisites/{}*.json'.format(pipeline_name)))
+    requirements_files = glob.glob(os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'processing_prerequisites','{}*.json'.format(pipeline_name)))
     requirements_dicts = []
     for temp_requirement_file in requirements_files:
         with open(temp_requirement_file, 'r') as f:
             requirements_dicts.append(json.load(f))
     print('{} requirements dictionaries: {}'.format(pipeline_name, requirements_dicts))
             
-    file_selection_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'processing_file_selection/{}.json'.format(pipeline_name))
-    file_numbers_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'processing_file_numbers/{}.json'.format(pipeline_name))
-    external_requirements_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'external_requirements/{}.json'.format(pipeline_name))
+    file_selection_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'processing_file_selection', '{}.json'.format(pipeline_name))
+    file_numbers_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'processing_file_numbers', '{}.json'.format(pipeline_name))
+    external_requirements_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'external_requirements', '{}.json'.format(pipeline_name))
 
     with open(file_selection_file_path, 'r') as f:
         file_selection_dict = json.load(f)
