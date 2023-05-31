@@ -1168,6 +1168,11 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     file_selection_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'processing_file_selection/{}.json'.format(pipeline_name))
     file_numbers_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'processing_file_numbers/{}.json'.format(pipeline_name))
     external_requirements_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'external_requirements/{}.json'.format(pipeline_name))
+    print(requirements_files)
+    print(file_selection_file_path)
+    print(file_numbers_file_path)
+    print(external_requirements_file_path)
+
     with open(file_selection_file_path, 'r') as f:
         file_selection_dict = json.load(f)
     with open(file_numbers_file_path, 'r') as f:
