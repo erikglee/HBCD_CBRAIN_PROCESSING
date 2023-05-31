@@ -1092,13 +1092,92 @@ def find_potential_subjects_for_processing(cbrain_api_token, bids_bucket_config,
 
     return registered_and_s3_names, registered_and_s3_ids, registered_and_s3_sizes
 
+def check_rerun_status(cbrain_subject_id, cbrain_tasks, derivatives_data_provider_id, tool_config_id, rerun_level = 1):
+    '''Function that helps determine whether processing should be ran based on existing CBRAIN tasks.
+    
+    Parameters
+    ----------
+    cbrain_subject_id : str
+        Numeric ID of CBRAIN subject or file. NOTE
+        if processing was launched with a CBRAIN CSV,
+        then the CBRAIN CSV's ID may need to be used
+        instead.
+    cbrain_tasks : list of dicts
+        All tasks in CBRAIN (returned by CBRAIN API)
+    derivatives_data_provider_id : int
+        The data provider being used for processing
+    tool_config_id : int
+        The id of the tool config being used for processing
+    rerun_level : 0, 1, 2, default 1
+        This determines when the function will recommend rerunning
+        processing. If 0 is used, processing will only be recommended
+        when the cbrain_subject_id hasn't been used in any cbrain_tasks
+        with the specified derivatives_data_provider_di and tool_config_id.
+        If 1 is used, processing will also be recommended when CBRAIN tasks
+        fall under certain states that indicate processing failed for CBRAIN/
+        system related reasons. If 2 is used, processing will also be recommended
+        when CBRAIN tasks have failed due to processing reasons. The function
+        should never recommend processing when there is a corresponding task that's
+        currently running, being setup, or in a similar processing state.
+        
+    Returns
+    -------
+    True if processing is recommended, else False
+    
+    
+    '''
+
+    rerun_group_1 = ['Terminated', 'Failed To Setup', 'Failed To PostProcess', 'Failed Setup Prerequisites', 'Failed PostProcess Prerequisites']
+    rerun_group_2 = ['Suspended', 'Failed', 'Failed On Cluster']
+
+    task_statuses = []
+    task_ids = []
+    for temp_task in cbrain_tasks:
+        if temp_task['tool_config_id'] == tool_config_id:
+            if temp_task['results_data_provider_id'] == derivatives_data_provider_id:
+                try:
+                    if cbrain_subject_id in temp_task['params']['interface_userfile_ids']:
+                        print('hello')
+                        task_statuses.append(temp_task['status'])
+                        task_ids.append(temp_task['id'])
+                except:
+                    continue
+
+    num_rerun_group_1 = 0
+    num_rerun_group_2 = 0
+    for temp_status in task_statuses:
+        if temp_status in rerun_group_1:
+            num_rerun_group_1 += 1
+        if temp_status in rerun_group_2:
+            num_rerun_group_2 += 1
+
+    if len(task_statuses) == 0:
+        return True
+    else:
+        if rerun_level == 0:
+            print('    Found existing task(s), consider deleting the task(s) or using higher rerun level. Tasks: {}, Statuses: {}'.format(task_ids, task_statuses))
+        elif rerun_level == 1:
+            if len(task_statuses) == num_rerun_group_1:
+                return True
+            else:
+                print('    Found existing task(s) with status within rerun_level = 1, consider deleting the task(s) or using higher rerun level. Tasks: {}, Statuses {}'.format(task_ids, task_statuses))
+        elif rerun_level == 2:
+            if len(task_statuses) == (num_rerun_group_1 + num_rerun_group_2):
+                return True
+            else:
+                print('    Found existing task(s) with status within rerun_level = 2, consider deleting the task(s) or using higher rerun level. Tasks: {}, Statuses {}'.format(task_ids, task_statuses))
+        else:
+            raise ValueError('Error: rerun_level must be 0, 1, or 2')
+
+    return False
+
 
 def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_ids, registered_and_s3_sizes, cbrain_csv_file_dir,
                       cbrain_api_token, bids_data_provider_name = 'HBCD-Pilot-Official', user_name = 'elee', group_name = 'HBCD-Computing',
                       group_id = '10367', user_id = '4022', raise_error_for_duplicate_cbrain_csv_files = False,
                       bids_bucket_config = '/some/path', bids_bucket = 'hbcd-pilot', bids_bucket_prefix = 'assembly_bids',
                       derivatives_bucket_config = '/some/path', derivatives_bucket = 'hbcd-pilot', derivatives_bucket_prefix = 'derivatives',
-                      bids_data_provider_id = '710', cbrain_logging_folder_prefix='cbrain_misc'):
+                      bids_data_provider_id = '710', cbrain_logging_folder_prefix='cbrain_misc', rerun_level = 1):
     
     '''Function to manage processing of data using CBRAIN
 
@@ -1152,8 +1231,21 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         list files that are going to be registered already exists in CBRAIN. If this
         is false, then CBRAIN will not throw an error but will only process subjects
         who don't already have files registered in CBRAIN.
+    rerun_level: 0, 1, 2, default 1
+        If 0, then the script will not rerun any subjects that already have
+        processing results in CBRAIN. If 1, then the script will rerun subjects
+        that have processing results in CBRAIN but only if the processing results
+        failed for CBRAIN/Cluster specific reasons. If 2, then the script will 
+        also rerun processing in cases where processing failed on the cluster or
+        in similar scenarios.
     
     '''
+
+    #Load the tool config id for the current pipeline being used for processing
+    tool_config_file = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'tool_config_ids.json')
+    with open(tool_config_file, 'r') as f:
+        tool_config_dict = json.load(f)
+    tool_config_id = str(tool_config_dict[pipeline_name])
     
     
     #Load different json files that are the same for each subject
@@ -1206,6 +1298,13 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                                         bids_bucket_config = derivatives_bucket_config):
             print('    Already has derivatives')
             continue
+
+        #Check what type of processing has already occured for the subject with
+        #this pipeline and only continue if processing hasn't already been initiated
+        #or under certain failure conditions (see documentation for check_rerun_status)
+        if False == check_rerun_status(registered_and_s3_ids[i], current_cbrain_tasks, bids_data_provider_id, tool_config_id, rerun_level = 1):
+            print('    Existing CBRAIN tasks indicate that processing is unnecessary, but this isnt used yet...')
+            
             
         #Check that the subject has requirements satisfiying at least one pipeline specific json in the processing_prerequisites folder
         requirements_satisfied = 0
