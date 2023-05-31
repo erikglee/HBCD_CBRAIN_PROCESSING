@@ -1157,8 +1157,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     
     
     #Load different json files that are the same for each subject
-    Path(inspect.getfile(update_processing)).absolute().parent.resolve()
-    requirements_files = glob.glob(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'processing_prerequisites/{}*.json'.format(pipeline_name))
+    requirements_files = glob.glob(os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'processing_prerequisites/{}*.json'.format(pipeline_name)))
     requirements_dicts = []
     for temp_requirement_file in requirements_files:
         with open(temp_requirement_file, 'r') as f:
