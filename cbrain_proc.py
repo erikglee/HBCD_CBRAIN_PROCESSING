@@ -1090,7 +1090,7 @@ def find_potential_subjects_for_processing(cbrain_api_token, bids_bucket_config,
     return registered_and_s3_names, registered_and_s3_ids, registered_and_s3_sizes
 
 
-def update_fully_generic_processing_using_csv_dict(pipeline_name, registered_and_s3_names, registered_and_s3_ids, registered_and_s3_sizes, cbrain_csv_file_dir,
+def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_ids, registered_and_s3_sizes, cbrain_csv_file_dir,
                       cbrain_api_token, data_provider_name = 'HBCD-Pilot-Official', user_name = 'elee', group_name = 'HBCD-Computing',
                       bucket = 'hbcd-pilot', data_provider_id = 710, group_id = 10367, user_id = 4022, raise_error_for_duplicate_cbrain_csv_files = True):
     
