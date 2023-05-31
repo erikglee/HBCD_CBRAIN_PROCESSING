@@ -843,7 +843,6 @@ def launch_task_concise_dict(pipeline_name, variable_parameters_dict, cbrain_api
         
     #Construct different dictionaries that will be sent to CBRAIN
     task_headers, task_params, task_data = construct_generic_cbrain_task_info_dict(cbrain_api_token, group_id, user_id, tool_config_id, data_provider_id, task_description, variable_parameters_dict, fixed_parameters_dict)
-    #task_headers, task_params, task_data = construct_generic_cbrain_task_info_dict(cbrain_api_token, group_id, user_id, tool_config_id, data_provider_id, task_description)
         
     #Submit task to CBRAIN
     return submit_generic_cbrain_task(task_headers, task_params, task_data, pipeline_name)
