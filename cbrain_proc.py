@@ -832,8 +832,7 @@ def launch_task_concise_dict(pipeline_name, variable_parameters_dict, cbrain_api
         True if task is submitted to CBRAIN without immediate error, else False
         
     '''
-    
-    tool_config_file = os.path.join(pathlib.Path().absolute().parent.resolve(), 'tool_config_ids.json')
+    tool_config_file = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'tool_config_ids.json')
     with open(tool_config_file, 'r') as f:
         tool_config_dict = json.load(f)
     tool_config_id = str(tool_config_dict[pipeline_name])
