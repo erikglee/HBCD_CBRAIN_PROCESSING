@@ -959,6 +959,7 @@ def find_cbrain_files_on_dp(cbrain_api_token, data_provider_id = 710):
     base_url = 'https://portal.cbrain.mcgill.ca'
     files = []
     files_request = {'cbrain_api_token': cbrain_api_token, 'page': 1, 'per_page': 1000}
+    data_provider_id = int(data_provider_id)
 
     while True:
         files_response = requests.get(
