@@ -5,6 +5,7 @@ import boto3
 from botocore.exceptions import ClientError
 import pathlib
 import glob
+import logging
 
 
 #WHAT DO WE NEED TO IMPLEMENT.
@@ -571,7 +572,7 @@ def register_cbrain_csvs_in_cbrain(file_name, cbrain_api_token, user_id = 4022, 
         print('CBRAIN Notice: {}'.format(dp_response.json()['notice']))
         print('CBRAIN Error: {}'.format(dp_response.json()['error']))
     else:
-        print("Registration of {} failed.".format(temp_s3_subject))
+        print("Registration of {} failed.".format(file_name))
         print(dp_response.text)
                       
     return
@@ -1091,10 +1092,20 @@ def find_potential_subjects_for_processing(cbrain_api_token, bids_bucket_config,
 
 
 def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_ids, registered_and_s3_sizes, cbrain_csv_file_dir,
-                      cbrain_api_token, data_provider_name = 'HBCD-Pilot-Official', user_name = 'elee', group_name = 'HBCD-Computing',
-                      bucket = 'hbcd-pilot', data_provider_id = 710, group_id = 10367, user_id = 4022, raise_error_for_duplicate_cbrain_csv_files = True):
+                      cbrain_api_token, bids_data_provider_name = 'HBCD-Pilot-Official', user_name = 'elee', group_name = 'HBCD-Computing',
+                      group_id = '10367', user_id = '4022', raise_error_for_duplicate_cbrain_csv_files = False,
+                      bids_bucket_config = '/some/path', bids_bucket = 'hbcd-pilot', bids_bucket_prefix = 'assembly_bids',
+                      derivatives_bucket_config = '/some/path', derivatives_bucket = 'hbcd-pilot', derivatives_bucket_prefix = 'derivatives',
+                      bids_data_provider_id = '710', cbrain_logging_folder_prefix='cbrain_misc'):
     
     '''Function to manage processing of data using CBRAIN
+
+    Right now this function only supports processing in the case
+    where the bids bucket and derivatives bucket are the same.
+    In the future it will be desired to have functionality to
+    support the case where the two buckets are different, such
+    that a centralized BIDS bucket can be used by many investigators,
+    and the outputs can be saved to a bucket that they own.
     
     This function will iterate through all BIDS subjects found in
     registered_and_s3_names and try to process them given the pipeline
@@ -1125,7 +1136,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         The path to the directory where cbrain file lists will be saved locally
     cbrain_api_token: str
         The API token for your current CBRAIN session
-    data_provider_name: str, default 'HBCD-Pilot-Official'
+    bids_data_provider_name: str, default 'HBCD-Pilot-Official'
         Name of DP as listed in CBRAIN
     user_name: str, default 'elee'
         The name of the CBRAIN user processing the data
@@ -1144,16 +1155,16 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     
     
     #Load different json files that are the same for each subject
-    requirements_files = glob.glob(os.path.join(pathlib.Path().absolute().parent.resolve(), 'HBCD_CBRAIN_PROCESSING/processing_prerequisites/{}*.json'.format(pipeline_name)))
+    requirements_files = glob.glob(os.path.join(pathlib.Path().absolute().parent.resolve(), 'processing_prerequisites/{}*.json'.format(pipeline_name)))
     requirements_dicts = []
     for temp_requirement_file in requirements_files:
         with open(temp_requirement_file, 'r') as f:
             requirements_dicts.append(json.load(f))
     print('{} requirements dictionaries: {}'.format(pipeline_name, requirements_dicts))
             
-    file_selection_file_path = os.path.join(pathlib.Path().absolute().parent.resolve(), 'HBCD_CBRAIN_PROCESSING/processing_file_selection/{}.json'.format(pipeline_name))
-    file_numbers_file_path = os.path.join(pathlib.Path().absolute().parent.resolve(), 'HBCD_CBRAIN_PROCESSING/processing_file_numbers/{}.json'.format(pipeline_name))
-    external_requirements_file_path = os.path.join(pathlib.Path().absolute().parent.resolve(), 'HBCD_CBRAIN_PROCESSING/external_requirements/{}.json'.format(pipeline_name))
+    file_selection_file_path = os.path.join(pathlib.Path().absolute().parent.resolve(), 'processing_file_selection/{}.json'.format(pipeline_name))
+    file_numbers_file_path = os.path.join(pathlib.Path().absolute().parent.resolve(), 'processing_file_numbers/{}.json'.format(pipeline_name))
+    external_requirements_file_path = os.path.join(pathlib.Path().absolute().parent.resolve(), 'external_requirements/{}.json'.format(pipeline_name))
     with open(file_selection_file_path, 'r') as f:
         file_selection_dict = json.load(f)
     with open(file_numbers_file_path, 'r') as f:
@@ -1175,7 +1186,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         
     #Grab some CBRAIN info that will be referenced for all subjects being processed ########
     current_cbrain_tasks = find_current_cbrain_tasks(cbrain_api_token)
-    data_provider_files = find_cbrain_files_on_dp(cbrain_api_token, data_provider_id = 710)
+    data_provider_files = find_cbrain_files_on_dp(cbrain_api_token, data_provider_id = bids_data_provider_id)
     ########################################################################################
     
     
@@ -1187,16 +1198,20 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         print('Evaluating: {}'.format(temp_subject))
         
         #Be sure that the current subject doesn't have existing output before starting processing
-        if check_if_derivatives_exist(temp_subject, pipeline_name, bucket = bucket):
+        if check_if_derivatives_exist(temp_subject, pipeline_name,
+                                        bucket = derivatives_bucket, prefix = derivatives_bucket_prefix,
+                                        bids_bucket_config = derivatives_bucket_config):
             print('    Already has derivatives')
             continue
             
         #Check that the subject has requirements satisfiying at least one pipeline specific json in the processing_prerequisites folder
         requirements_satisfied = 0
         for temp_requirement in requirements_dicts:
-            requirements_satisfied += int(check_bids_requirements(temp_subject, temp_requirement))
+            requirements_satisfied += int(check_bids_requirements(temp_subject, temp_requirement, bucket = bids_bucket, prefix = bids_bucket_prefix, bids_bucket_config = bids_bucket_config))
         if requirements_satisfied > 0:
-            files_list = grab_required_bids_files(temp_subject, file_selection_dict, file_numbers_dict)
+            subject_files_list = grab_required_bids_files(temp_subject, file_selection_dict, file_numbers_dict,
+              bucket = bids_bucket, prefix = bids_bucket_prefix,
+              bids_bucket_config = bids_bucket_config)
         else:
             print('    Requirements not satisfied')
             continue
@@ -1209,10 +1224,10 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             continue #skip processing if external requirements aren't found
             
         #Grab files for the subject according to pipeline specific jsons in processing_file_numbers and processing_file_selection folders
-        subject_files_list = grab_required_bids_files(temp_subject, file_selection_dict, file_numbers_dict, bucket = bucket)
+        subject_files_list = grab_required_bids_files(temp_subject, file_selection_dict, file_numbers_dict, bucket = bids_bucket)
         print('    Will attempt to run processing if this subject doesnt already have CBRAIN CSV for current pipeline registered in CBRAIN')
         
-        text = make_cbrain_csv_text(registered_and_s3_ids[i], temp_subject, registered_and_s3_sizes[i], data_provider_name, user_name, group_name, subject_files_list)
+        text = make_cbrain_csv_text(registered_and_s3_ids[i], temp_subject, registered_and_s3_sizes[i], bids_data_provider_name, user_name, group_name, subject_files_list)
         cbrain_csv_file_path = os.path.join(cbrain_csv_file_dir, '{}_{}_CbrainId-{}.csv'.format(pipeline_name, temp_subject, registered_and_s3_ids[i]))
         with open(cbrain_csv_file_path, 'w') as f:
             f.write(text)
@@ -1247,13 +1262,21 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     for i, temp_cbrain_csv in enumerate(unique_cbrain_csv_names):
             
         #Upload the CBRAIN CSV File to S3 and then Register it in CBRAIN
-        upload_cbrain_csv_file(unique_cbrain_csv_local_paths[i], bucket = bucket, prefix = 'cbrain_misc/cbrain_csvs')
-        register_cbrain_csvs_in_cbrain(temp_cbrain_csv, cbrain_api_token)
+        upload_cbrain_csv_file(unique_cbrain_csv_local_paths[i], 
+                               bucket = derivatives_bucket, 
+                               prefix = os.path.join(cbrain_logging_folder_prefix, 'cbrain_csvs'), 
+                               bucket_config = bids_bucket_config)
+        register_cbrain_csvs_in_cbrain(temp_cbrain_csv, 
+                                cbrain_api_token, 
+                                user_id = user_id, 
+                                group_id = group_id, 
+                                browse_path = os.path.join(cbrain_logging_folder_prefix, 'cbrain_csvs'), 
+                                data_provider_id = bids_data_provider_id)
     #####################################################################################################
     #####################################################################################################
                
     #Find all extended file lists in our DP in CBRAIN and start processing with the ones we just uploaded
-    cbrain_extended_file_list_results = find_cbrain_extended_file_list_files(cbrain_api_token)
+    cbrain_extended_file_list_results = find_cbrain_extended_file_list_files(cbrain_api_token, data_provider_id = bids_data_provider_id)
     for i, temp_cbrain_csv in enumerate(unique_cbrain_csv_names):
         for temp_file in cbrain_extended_file_list_results:
             if temp_cbrain_csv.split('/')[-1] == temp_file['name']:
@@ -1267,7 +1290,9 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                         print(temp_file)
                         unique_subject_external_requirements[i][temp_requirement] = str(temp_file['id'])
                 print('{} via API'.format(temp_file['name']))
-                launch_task_concise_dict(pipeline_name, unique_subject_external_requirements[i], cbrain_api_token, data_provider_id = data_provider_id,
+                launch_task_concise_dict(pipeline_name, unique_subject_external_requirements[i], cbrain_api_token, data_provider_id = bids_data_provider_id,
                                          group_id = group_id, user_id = user_id, task_description = '{} via API'.format(temp_file['name']))
+
+    return
                 
     return
