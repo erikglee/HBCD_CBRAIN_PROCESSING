@@ -17,7 +17,7 @@ group_name = 'HBCD-Computing'
 group_id = '10367' #Could this be inferred from the group name? When is this needed?
 cbrain_logging_folder_prefix = 'cbrain_misc'
 
-ids, names, sizes = cbrain_proc.find_potential_subjects_for_processing(cbrain_api_token, 
+names, ids, sizes = cbrain_proc.find_potential_subjects_for_processing(cbrain_api_token, 
                                                                         bids_bucket_config, 
                                                                         bids_bucket = bids_bucket,
                                                                         bids_prefix = bids_prefix, 
