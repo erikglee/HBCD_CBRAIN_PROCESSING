@@ -1257,6 +1257,8 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             unique_subject_external_requirements.append(subject_external_requirements_list[i])
     if len(already_registered_cbrain_csv_files) and (raise_error_for_duplicate_cbrain_csv_files == True):
         raise ValueError('Error: A number of CBRAIN CSV files with the same names are already registered in CBRAIN. Attempting processing will use existing CBRAIN files. Go to CBRAIN and delete files for: {}'.format(cbrain_csv_names))
+    print('CBRAIN CSV NAMES')
+    print(cbrain_csv_names)
     elif len(already_registered_cbrain_csv_files) and (raise_error_for_duplicate_cbrain_csv_files == False):
         print('Skipping processing for the following files since they were already registered in CBRAIN before initiation of this script. If you want these files to be included in processing, go to the CBRAIN GUI and delete them. Then if you run this script again the previously deleted files will be recreated for processing: {}'.format(already_registered_cbrain_csv_files))
     print('CBRAIN csv files created that werent already on CBRAIN {}'.format(unique_cbrain_csv_names))
