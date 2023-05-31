@@ -85,6 +85,7 @@ def find_cbrain_subjects(cbrain_api_token, data_provider_id = 710): #For the rea
     file_names = []
     ids = []
     sizes = []
+    data_provider_id = int(data_provider_id)
     for temp in files:
         if (temp['data_provider_id'] == data_provider_id) and (temp['type'] == 'BidsSubject'):
             if temp['name'] not in file_names:
