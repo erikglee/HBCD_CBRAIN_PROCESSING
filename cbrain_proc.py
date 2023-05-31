@@ -1213,11 +1213,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         requirements_satisfied = 0
         for temp_requirement in requirements_dicts:
             requirements_satisfied += int(check_bids_requirements(temp_subject, temp_requirement, bucket = bids_bucket, prefix = bids_bucket_prefix, bids_bucket_config = bids_bucket_config))
-        if requirements_satisfied > 0:
-            subject_files_list = grab_required_bids_files(temp_subject, file_selection_dict, file_numbers_dict,
-              bucket = bids_bucket, prefix = bids_bucket_prefix,
-              bids_bucket_config = bids_bucket_config)
-        else:
+        if requirements_satisfied == 0:
             print('    Requirements not satisfied')
             continue
             
@@ -1229,7 +1225,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             continue #skip processing if external requirements aren't found
             
         #Grab files for the subject according to pipeline specific jsons in processing_file_numbers and processing_file_selection folders
-        subject_files_list = grab_required_bids_files(temp_subject, file_selection_dict, file_numbers_dict, bucket = bids_bucket)
+        subject_files_list = grab_required_bids_files(temp_subject, file_selection_dict, file_numbers_dict, bucket = bids_bucket, prefix = bids_bucket_prefix, bids_bucket_config = bids_bucket_config)
         print('    Will attempt to run processing if this subject doesnt already have CBRAIN CSV for current pipeline registered in CBRAIN')
         
         text = make_cbrain_csv_text(registered_and_s3_ids[i], temp_subject, registered_and_s3_sizes[i], bids_data_provider_name, user_name, group_name, subject_files_list)
