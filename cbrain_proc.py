@@ -1065,7 +1065,7 @@ def find_potential_subjects_for_processing(cbrain_api_token, bids_bucket_config,
     """
 
     #Find S3 Subjects
-    s3_subjects = find_s3_subjects(bids_bucket_config, bucket = bucket, prefix = prefix)
+    s3_subjects = find_s3_subjects(bids_bucket_config, bucket = bids_bucket, prefix = bids_prefix)
 
     #Grab data provider id for bucket from cbrain web instance
     cbrain_subjects, ids, sizes = find_cbrain_subjects(cbrain_api_token, data_provider_id = data_provider_id) #710 = HBCD Pilot Official, #725 is old
