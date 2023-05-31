@@ -1168,10 +1168,6 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     file_selection_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'processing_file_selection/{}.json'.format(pipeline_name))
     file_numbers_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'processing_file_numbers/{}.json'.format(pipeline_name))
     external_requirements_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'external_requirements/{}.json'.format(pipeline_name))
-    print(requirements_files)
-    print(file_selection_file_path)
-    print(file_numbers_file_path)
-    print(external_requirements_file_path)
 
     with open(file_selection_file_path, 'r') as f:
         file_selection_dict = json.load(f)
@@ -1226,6 +1222,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             
         #Check that the external requirements are satisfied for the subject (these are pipeline inputs that will be files/file collections
         #that should already be available for the subject on CBRAIN if the subject is ready for processing)
+        print(temp_subject)
         subject_external_requirements = grab_external_requirements(temp_subject, data_provider_files, external_requirements_dict) #implement function for this...
         if subject_external_requirements is None:
             print('    Missing external requirements')
