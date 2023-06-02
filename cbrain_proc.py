@@ -1400,4 +1400,4 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                 launch_task_concise_dict(pipeline_name, unique_subject_external_requirements[i], cbrain_api_token, data_provider_id = bids_data_provider_id,
                                          group_id = group_id, user_id = user_id, task_description = '{} via API'.format(temp_file['name']))
 
-    return data_provider_files
+    return
