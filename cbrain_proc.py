@@ -1022,13 +1022,20 @@ def grab_external_requirements(subject_name, cbrain_files, requirements_dict):
     subject_external_requirements = {}
     for temp_requirement in requirements_dict.keys():
         requirement_found = False
-        for temp_file in cbrain_files:
-            if (temp_file['name'] == subject_name) and (temp_file['type'] == requirements_dict[temp_requirement]):
-                requirement_found = True
-                subject_external_requirements[temp_requirement] = temp_file['id']
-                break
-        if requirement_found == False:
-            return None
+        #If the requirement is numeric, then this refers to a CBRAIN file ID
+        if requirements_dict[temp_requirement].isnumeric():
+            subject_external_requirements[temp_requirement] = requirements_dict[temp_requirement]
+        
+        #Otherwise, we will look for a CBRAIN file with the specified file type and with the subject
+        #name
+        else:
+            for temp_file in cbrain_files:
+                if (temp_file['name'] == subject_name) and (temp_file['type'] == requirements_dict[temp_requirement]):
+                    requirement_found = True
+                    subject_external_requirements[temp_requirement] = temp_file['id']
+                    break
+            if requirement_found == False:
+                return None
     return subject_external_requirements
 
 def find_potential_subjects_for_processing(cbrain_api_token, bids_bucket_config, bids_bucket = 'hbcd-pilot',
