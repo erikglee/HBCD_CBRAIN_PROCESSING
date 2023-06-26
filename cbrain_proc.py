@@ -1451,7 +1451,8 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
 
                 #Run "mark as newer" to be sure the latest version of the subject data
                 #is in the local CBRAIN cache once processing begins
-                
+                for temp_key in unique_subject_external_requirements[i].keys():
+                    cbrain_mark_as_newer(unique_subject_external_requirements[i][temp_key], cbrain_api_token)                
 
                 #Launch Processing
                 launch_task_concise_dict(pipeline_name, unique_subject_external_requirements[i], cbrain_api_token, data_provider_id = bids_data_provider_id,
