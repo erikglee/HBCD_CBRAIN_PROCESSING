@@ -626,7 +626,7 @@ def cbrain_mark_as_newer(file_id, cbrain_api_token):
     if dp_response.status_code == 200:
         print('CBRAIN Notice: {}'.format(dp_response.json()['notice']))
     else:
-        print("Mark As Newer for {} failed.".format(file_name))
+        print("Mark As Newer for {} failed.".format(file_id))
         print(dp_response.text)
                       
     return
@@ -695,9 +695,9 @@ def grab_json(json_config_location, pipeline_name):
     -------
     json_contents : dict
 
-
-
     """
+    
+    #hello
     
     #Grab the json config path and load it
     if json_config_location != False:
