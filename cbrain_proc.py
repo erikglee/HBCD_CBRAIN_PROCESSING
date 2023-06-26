@@ -565,7 +565,6 @@ def register_cbrain_csvs_in_cbrain(file_name, cbrain_api_token, user_id = 4022, 
     dp_response = requests.post(
         url = '/'.join([base_url, 'data_providers', str(data_provider_id), 'register']),
         headers = {'Accept': 'application/json'},
-        #headers = {'Content-Type': 'application/json'},
         params = task_params,
         data = data
     )
@@ -576,6 +575,58 @@ def register_cbrain_csvs_in_cbrain(file_name, cbrain_api_token, user_id = 4022, 
         print('CBRAIN Error: {}'.format(dp_response.json()['error']))
     else:
         print("Registration of {} failed.".format(file_name))
+        print(dp_response.text)
+                      
+    return
+
+def cbrain_mark_as_newer(file_id, cbrain_api_token):
+    '''Mark file as newer on CBRAIN
+    
+    If a file is cached in cbrain, you can call
+    this function to make sure the cache is updated
+    before the file is used in any upcoming processing.
+    This means the file will be re-downloaded from the
+    data provider where the file lives. If mark as newer
+    has already been called then CBRAIN will say 0 files
+    were marked as newer. This same behavior is also
+    observed in the case where the file is on the data
+    provider but not yet cached on the system where processing
+    occurs.
+    
+    Parameters
+    ----------
+    file_id : str
+        The id of the CBRAIN file that
+        should be "marked as newer"
+    cbrain_api_token : str
+        The api token generated when you logged into cbrain
+
+    '''    
+    
+    data = {
+              "file_ids": [file_id],
+              "operation": "all_newer",
+            }
+    
+    
+    base_url = 'https://portal.cbrain.mcgill.ca'
+    task_params = (
+        ('cbrain_api_token', cbrain_api_token),
+    )
+    
+    dp_response = requests.post(
+        url = '/'.join([base_url, 'userfiles', 'sync_multiple']),
+        headers = {'Accept': 'application/json'},
+        params = task_params,
+        json = data
+    )
+    
+
+    dp_response.json()
+    if dp_response.status_code == 200:
+        print('CBRAIN Notice: {}'.format(dp_response.json()['notice']))
+    else:
+        print("Mark As Newer for {} failed.".format(file_id))
         print(dp_response.text)
                       
     return
@@ -644,9 +695,9 @@ def grab_json(json_config_location, pipeline_name):
     -------
     json_contents : dict
 
-
-
     """
+    
+    #hello
     
     #Grab the json config path and load it
     if json_config_location != False:
@@ -1397,6 +1448,13 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                         print(temp_file)
                         unique_subject_external_requirements[i][temp_requirement] = str(temp_file['id'])
                 print('{} via API'.format(temp_file['name']))
+
+                #Run "mark as newer" to be sure the latest version of the subject data
+                #is in the local CBRAIN cache once processing begins
+                for temp_key in unique_subject_external_requirements[i].keys():
+                    cbrain_mark_as_newer(unique_subject_external_requirements[i][temp_key], cbrain_api_token)                
+
+                #Launch Processing
                 launch_task_concise_dict(pipeline_name, unique_subject_external_requirements[i], cbrain_api_token, data_provider_id = bids_data_provider_id,
                                          group_id = group_id, user_id = user_id, task_description = '{} via API'.format(temp_file['name']))
 
