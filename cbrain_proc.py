@@ -191,78 +191,6 @@ def create_page_iterator(bucket = 'hbcd-pilot', prefix = 'derivatives', bids_buc
     
     return page_iterator
 
-def upload_cbrain_csv_file(file_name, bucket = 'hbcd-cbrain-test', prefix = 'cbrain_misc/cbrain_csvs', bucket_config = False):
-    """Upload a CBRAIN CSV File to S3 Bucket
-
-    This function will upload an already generated
-    CBRAIN CSV File (i.e. extended file list) to
-    the desired bucket. Then it can later be registered
-    in CBRAIN and used to run processing.
-
-    Parameters
-    ----------
-    file_name : str
-        The name of the file to upload
-    bucket : str, default 'hbcd-cbrain-test'
-        The name of the bucket to upload to
-    prefix : str, default 'cbrain_misc/cbrain_csvs'
-        The prefix to use for the file in the bucket
-    bids_bucket_config : str, default False
-        The path to the config file for the s3 bucket
-        If False, then the default config file will be used.
-        If a string, then that string will be used as the
-        path to the config file.
-
-    Returns
-    -------
-    bool
-        True if file was uploaded successfully,
-        False if not.
-    """
-
-    
-    #Grab config path
-    if bucket_config == False:
-        config_path = ''
-    else:
-        if type(bucket_config) != str:
-            raise NameError('Error: different config path should eithe be string or boolean')
-        else:
-            config_path = bucket_config
-            
-    #Find info from config file    
-    with open(config_path, 'r') as f:
-        lines = f.read().splitlines()
-        for temp_line in lines:
-            if 'access_key' == temp_line[:10]:
-                access_key = temp_line.split('=')[-1].strip()
-            if 'secret_key' == temp_line[:10]:
-                secret_key = temp_line.split('=')[-1].strip()
-            if 'host_base' == temp_line[:9]:
-                host_base = temp_line.split('=')[-1].strip()
-                if 'https' != host_base[:5]:
-                    host_base = 'https://' + host_base
-        
-    #Create s3 client
-    client = boto3.client(
-        's3',
-        aws_access_key_id=access_key,
-        aws_secret_access_key=secret_key,
-        endpoint_url =host_base
-    )
-
-    del access_key, secret_key, host_base
-
-    object_name = os.path.join(prefix, os.path.basename(file_name))
-    print(object_name)
-
-    # Upload the file
-    try:
-        response = client.upload_file(file_name, bucket, object_name)
-    except ClientError as e:
-        logging.error(e)
-        return False
-    return True
 
 def upload_processing_config_log(file_name, bucket = 'hbcd-cbrain-test', prefix = 'cbrain_misc/cbrain_processing_configuration_logs', bucket_config = False):
     """Upload a CBRAIN CSV File to S3 Bucket
@@ -327,7 +255,6 @@ def upload_processing_config_log(file_name, bucket = 'hbcd-cbrain-test', prefix 
     del access_key, secret_key, host_base
 
     object_name = os.path.join(prefix, os.path.basename(file_name))
-    print(object_name)
 
     # Upload the file
     try:
@@ -878,9 +805,6 @@ def construct_generic_cbrain_task_info_dict(cbrain_api_token, group_id, user_id,
     #listed file within the same folder
     if type(all_to_keep) != type(None):
         task_data['cbrain_task']['params']['invoke']['all_to_keep'] = all_to_keep
-
-    #Here for testing
-    print(task_data['cbrain_task']['params']['interface_userfile_ids'])
     
     return task_headers, task_params, task_data
 
