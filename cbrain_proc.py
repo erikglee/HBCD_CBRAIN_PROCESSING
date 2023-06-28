@@ -1424,6 +1424,11 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         subject_external_requirements_list.append(subject_external_requirements)
         final_subjects_ids_for_proc.append(registered_and_s3_ids[i])
         final_subjects_names_for_proc.append(temp_subject)
+
+        print(all_to_keep_lists)
+        print(subject_external_requirements_list)
+        print(final_subjects_ids_for_proc)
+        print(final_subjects_names_for_proc)
        
     #################################################################################################
     #################################################################################################
