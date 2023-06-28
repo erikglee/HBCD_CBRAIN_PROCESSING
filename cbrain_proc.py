@@ -1222,6 +1222,7 @@ def check_rerun_status(cbrain_subject_id, cbrain_tasks, derivatives_data_provide
 
     rerun_group_1 = ['Terminated', 'Failed To Setup', 'Failed To PostProcess', 'Failed Setup Prerequisites', 'Failed PostProcess Prerequisites']
     rerun_group_2 = ['Suspended', 'Failed', 'Failed On Cluster']
+    cbrain_subject_id_str = str(cbrain_subject_id)
 
     task_statuses = []
     task_ids = []
@@ -1229,7 +1230,7 @@ def check_rerun_status(cbrain_subject_id, cbrain_tasks, derivatives_data_provide
         if temp_task['tool_config_id'] == int(tool_config_id):
             if temp_task['results_data_provider_id'] == int(derivatives_data_provider_id):
                 try:
-                    if str(cbrain_subject_id) in temp_task['params']['interface_userfile_ids']:
+                    if cbrain_subject_id_str in temp_task['params']['interface_userfile_ids']:
                         task_statuses.append(temp_task['status'])
                         task_ids.append(temp_task['id'])
                 except:
@@ -1301,11 +1302,6 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     registered_and_s3_ids: list of str
         Has the same ordering of registered_and_s3_names, and contains
         the CBRAIN ids for each subject
-    registered_and_s3_sizes: list of str
-        Has the same ordering of registered_and_s3_names, and contains
-        the sizes of each subject's data (taken from CBRAIN)
-    cbrain_csv_file_dir : str
-        The path to the directory where cbrain file lists will be saved locally
     cbrain_api_token: str
         The API token for your current CBRAIN session
     bids_data_provider_name: str, default 'HBCD-Pilot-Official'
@@ -1317,11 +1313,6 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         be processed
     bucket: str, default 'hbcd-pilot'
         The name of the bucket where the BIDS and derivatives data is stored
-    raise_error_for_duplicate_cbrain_csv_files: bool, default True
-        If this is true, the script will throw an error if one of the cbrain file
-        list files that are going to be registered already exists in CBRAIN. If this
-        is false, then CBRAIN will not throw an error but will only process subjects
-        who don't already have files registered in CBRAIN.
     rerun_level: 0, 1, 2, default 1
         If 0, then the script will not rerun any subjects that already have
         processing results in CBRAIN. If 1, then the script will rerun subjects
