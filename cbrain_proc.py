@@ -513,8 +513,6 @@ def grab_required_bids_files(subject_id, requirements_dict, num_requirements_dic
                 subject_etags.append(temp_dict['ETag'])
         else:
             print('No BIDS contents found for: {}'.format(subject_id))
-
-    print('EXAMPLE_DICT_FROM_BOTO3 {}'.format(temp_dict))
     
     sorted_etags = [x for _, x in sorted(zip(subject_files, subject_etags))]
     sorted_etags.reverse()
