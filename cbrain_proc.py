@@ -1505,10 +1505,10 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         final_subjects_ids_for_proc.append(registered_and_s3_ids[i])
         final_subjects_names_for_proc.append(temp_subject)
 
-        print('all_to_keep {}'.format(all_to_keep_lists))
-        print('subject_external_req {}'.format(subject_external_requirements_list))
-        print('subject_ids {}'.format(final_subjects_ids_for_proc))
-        print('subject_names {}'.format(final_subjects_names_for_proc))
+        #print('all_to_keep {}'.format(all_to_keep_lists))
+        #print('subject_external_req {}'.format(subject_external_requirements_list))
+        #print('subject_ids {}'.format(final_subjects_ids_for_proc))
+        #print('subject_names {}'.format(final_subjects_names_for_proc))
        
     #################################################################################################
     #################################################################################################
@@ -1521,7 +1521,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         for temp_requirement in external_requirements_dict.keys():
             if external_requirements_dict[temp_requirement] == 'BidsSubject':
                 subject_external_requirements_list[i][temp_requirement] = str(temp_subject)
-        print('{} via API'.format(final_subjects_names_for_proc[i]))
+        #print('{} via API'.format(final_subjects_names_for_proc[i]))
 
         #Run "mark as newer" to be sure the latest version of the subject data
         #is in the local CBRAIN cache once processing begins
