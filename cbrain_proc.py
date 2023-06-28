@@ -1264,12 +1264,11 @@ def check_rerun_status(cbrain_subject_id, cbrain_tasks, derivatives_data_provide
     return False
 
 
-def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_ids, registered_and_s3_sizes, cbrain_csv_file_dir,
-                      cbrain_api_token, bids_data_provider_name = 'HBCD-Pilot-Official', user_name = 'elee', group_name = 'HBCD-Computing',
-                      group_id = '10367', user_id = '4022', raise_error_for_duplicate_cbrain_csv_files = False,
-                      bids_bucket_config = '/some/path', bids_bucket = 'hbcd-pilot', bids_bucket_prefix = 'assembly_bids',
-                      derivatives_bucket_config = '/some/path', derivatives_bucket = 'hbcd-pilot', derivatives_bucket_prefix = 'derivatives',
-                      bids_data_provider_id = '710', cbrain_logging_folder_prefix='cbrain_misc', rerun_level = 1):
+def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_ids, cbrain_api_token,
+                        group_id = '10367', user_id = '4022', bids_bucket_config = '/some/path',
+                        bids_bucket = 'hbcd-pilot', bids_bucket_prefix = 'assembly_bids',
+                        derivatives_bucket_config = '/some/path', derivatives_bucket = 'hbcd-pilot',
+                        derivatives_bucket_prefix = 'derivatives', bids_data_provider_id = '710', rerun_level = 1):
     
     '''Function to manage processing of data using CBRAIN
 
@@ -1395,7 +1394,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         #Check what type of processing has already occured for the subject with
         #this pipeline and only continue if processing hasn't already been initiated
         #or under certain failure conditions (see documentation for check_rerun_status)
-        if False == check_rerun_status(registered_and_s3_ids[i], current_cbrain_tasks, bids_data_provider_id, tool_config_id, rerun_level = 1):
+        if False == check_rerun_status(registered_and_s3_ids[i], current_cbrain_tasks, bids_data_provider_id, tool_config_id, rerun_level = rerun_level):
             continue #Check rerun status will print out a message to the user if processing is not going to be rerun
             
             
