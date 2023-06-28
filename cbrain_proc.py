@@ -1439,11 +1439,11 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     #################################################################################################
     #Iterate through all subjects who were deemed ready for processing,
     # and submit task to process their data in CBRAIN.
+    print('\n\n\n')
     for i, temp_subject in enumerate(final_subjects_ids_for_proc):  
         #Replace the BidsSubject field with the CBRAIN CSV ID. Importantly
         #this will only work if the subject has one field that takes the
         #file type BidsSubject.
-        print('\n\n\n')
         for temp_requirement in external_requirements_dict.keys():
             if external_requirements_dict[temp_requirement] == 'BidsSubject':
                 subject_external_requirements_list[i][temp_requirement] = str(temp_subject)
