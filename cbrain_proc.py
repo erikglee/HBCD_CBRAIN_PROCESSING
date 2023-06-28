@@ -920,7 +920,7 @@ def submit_generic_cbrain_task(task_headers, task_params, task_data, pipeline_na
     if task_response.status_code == 200:
         print("Successfully submitted {} processing to CBRAIN for CBRAIN CSV File.".format(pipeline_name))
         task_info = task_response.json()
-        print(json.dumps(task_info, indent=4)) #Could return this if we want to use it later...
+        #print(json.dumps(task_info, indent=4))
         json_for_logging = {}
         json_for_logging['returned_by_cbrain'] = task_info
         json_for_logging['submitted_task_headers'] = task_headers
