@@ -1439,7 +1439,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
 
         #Launch Processing
         launch_task_concise_dict(pipeline_name, subject_external_requirements_list[i], cbrain_api_token, data_provider_id = bids_data_provider_id,
-                                    group_id = group_id, user_id = user_id, task_description = '{} via API'.format(final_subjects_names_for_proc[i]),
+                                    group_id = group_id, user_id = user_id, task_description = ' via API',
                                     all_to_keep = all_to_keep_lists[i])
 
     return
