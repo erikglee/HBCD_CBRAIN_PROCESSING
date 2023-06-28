@@ -630,9 +630,9 @@ def cbrain_mark_as_newer(file_id, cbrain_api_token):
 
     dp_response.json()
     if dp_response.status_code == 200:
-        print('CBRAIN Notice: {}'.format(dp_response.json()['notice']))
+        print('    CBRAIN Notice: {}'.format(dp_response.json()['notice']))
     else:
-        print("Mark As Newer for {} failed.".format(file_id))
+        print("    Mark As Newer for {} failed.".format(file_id))
         print(dp_response.text)
                       
     return
@@ -840,7 +840,7 @@ def submit_generic_cbrain_task(task_headers, task_params, task_data, pipeline_na
     )
 
     if task_response.status_code == 200:
-        print("Successfully submitted {} processing to CBRAIN for CBRAIN CSV File.".format(pipeline_name))
+        #print("Successfully submitted {} processing to CBRAIN for CBRAIN CSV File.".format(pipeline_name))
         task_info = task_response.json()
         #print(json.dumps(task_info, indent=4))
         json_for_logging = {}
