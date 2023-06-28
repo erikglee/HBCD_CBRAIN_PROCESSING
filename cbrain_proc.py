@@ -1349,7 +1349,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     for temp_requirement_file in requirements_files:
         with open(temp_requirement_file, 'r') as f:
             requirements_dicts.append(json.load(f))
-    print('{} requirements dictionaries: {}'.format(pipeline_name, requirements_dicts))
+    print('{} requirements dictionaries: {}\n\n'.format(pipeline_name, requirements_dicts))
             
     file_selection_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'processing_file_selection', '{}.json'.format(pipeline_name))
     file_numbers_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'processing_file_numbers', '{}.json'.format(pipeline_name))
@@ -1443,6 +1443,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         #Replace the BidsSubject field with the CBRAIN CSV ID. Importantly
         #this will only work if the subject has one field that takes the
         #file type BidsSubject.
+        print('\n\n\n')
         for temp_requirement in external_requirements_dict.keys():
             if external_requirements_dict[temp_requirement] == 'BidsSubject':
                 subject_external_requirements_list[i][temp_requirement] = str(temp_subject)
