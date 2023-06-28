@@ -924,8 +924,7 @@ def launch_task_concise_dict(pipeline_name, variable_parameters_dict, cbrain_api
     return submit_generic_cbrain_task(task_headers, task_params, task_data, pipeline_name)
 
 
-#Not being used but is still probably useful
-def find_current_cbrain_tasks(cbrain_api_token):
+def find_current_cbrain_tasks(cbrain_api_token, data_provider_id = None):
     '''Generates info on extended file list files
     
     Parameters
@@ -933,6 +932,8 @@ def find_current_cbrain_tasks(cbrain_api_token):
     
     cbrain_api_token : str
         The CBRAIN API token for the current session
+    data_provider_id : None or int
+        Restrict tasks to the specific data provider
         
     Returns
     -------
@@ -959,8 +960,17 @@ def find_current_cbrain_tasks(cbrain_api_token):
         # Stop requesting responses when we're at the last page
         if len(tasks_response.json()) < tasks_request['per_page']:
             break 
-    
-    return tasks
+            
+    if type(data_provider_id) == type(None):
+        return tasks
+    else:
+        if type(data_provider_id) == str:
+            data_provider_id = int(data_provider_id)
+        tasks_to_return = []
+        for temp_task in tasks:
+            if temp_task['results_data_provider_id'] == data_provider_id:
+                tasks_to_return.append(temp_task)
+        return tasks_to_return
 
 
 def find_cbrain_extended_file_list_files(cbrain_api_token, data_provider_id = 710):
@@ -1220,7 +1230,6 @@ def check_rerun_status(cbrain_subject_id, cbrain_tasks, derivatives_data_provide
             if temp_task['results_data_provider_id'] == derivatives_data_provider_id:
                 try:
                     if cbrain_subject_id in temp_task['params']['interface_userfile_ids']:
-                        print('hello')
                         task_statuses.append(temp_task['status'])
                         task_ids.append(temp_task['id'])
                 except:
@@ -1363,13 +1372,11 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     ###################################################################################
         
     #Grab some CBRAIN info that will be referenced for all subjects being processed ########
-    current_cbrain_tasks = find_current_cbrain_tasks(cbrain_api_token)
+    current_cbrain_tasks = find_current_cbrain_tasks(cbrain_api_token, data_provider_id = bids_data_provider_id) #this is bids_data_provider_id because we currently only support processing that grabs/saves from one DP
     data_provider_files = find_cbrain_files_on_dp(cbrain_api_token, data_provider_id = bids_data_provider_id)
     ########################################################################################
     
     
-    cbrain_csv_names = [] #cbrain name
-    cbrain_csv_local_paths = [] #local path
     subject_external_requirements_list = []
     all_to_keep_lists = [] #list of lists of files to keep for each subject
     final_subjects_ids_for_proc = [] #list of subjects that fullfill requirements for processing
@@ -1402,7 +1409,8 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             continue
             
         #Check that the external requirements are satisfied for the subject (these are pipeline inputs that will be files/file collections
-        #that should already be available for the subject on CBRAIN if the subject is ready for processing)
+        #that should already be available for the subject on CBRAIN if the subject is ready for processing). Note that
+        #this the files being passed to this function are already specific to a single data provider.
         subject_external_requirements = grab_external_requirements(temp_subject, data_provider_files, external_requirements_dict) #implement function for this...
         if subject_external_requirements is None:
             print('    Missing external requirements')
