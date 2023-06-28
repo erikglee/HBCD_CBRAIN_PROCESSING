@@ -713,7 +713,7 @@ def grab_json(json_config_location, pipeline_name):
     return json_contents
 
 
-def construct_generic_cbrain_task_info_dict(cbrain_api_token, group_id, user_id, tool_config_id, data_provider_id, task_description, variable_parameters_dict, fixed_parameters_dict):
+def construct_generic_cbrain_task_info_dict(cbrain_api_token, group_id, user_id, tool_config_id, data_provider_id, task_description, variable_parameters_dict, fixed_parameters_dict, all_to_keep = None):
     """Constructs dictionaries needed to launch CBRAIN task
     
     Parameters
@@ -741,6 +741,16 @@ def construct_generic_cbrain_task_info_dict(cbrain_api_token, group_id, user_id,
         A dictionary of the fixed parameters for the task
         (i.e. the parameters that will be the same for each
         subject)
+    all_to_keep : list or None, default None
+        A list of the files you want to keep from the subject
+        directory for processing. If None, all files will be
+        kept. If a list, only the files in the list will be
+        kept. If a list, the files that will be removed are
+        ONLY files that are in the same folder as a file that
+        is specified in the list. So if you say you only want
+        some T1 file from the anat dir, it will remove other
+        files from the anat dir, but will leave the func dir,
+        or other session dirs untouched.
 
     Returns
     -------
@@ -784,6 +794,11 @@ def construct_generic_cbrain_task_info_dict(cbrain_api_token, group_id, user_id,
         
     #Specify all of the userfile ids
     task_data['cbrain_task']['params']['interface_userfile_ids'] = userfile_ids
+    #Tell CBRAIN to only keep files in all_to_keep array. The function of this
+    #is complicated though... it will only remove non-listed files if there is a
+    #listed file within the same folder
+    if type(all_to_keep) != type(None):
+        task_data['cbrain_task']['params']['invoke']['all_to_keep'] = all_to_keep
 
     #Here for testing
     print(task_data['cbrain_task']['params']['interface_userfile_ids'])
@@ -835,7 +850,7 @@ def submit_generic_cbrain_task(task_headers, task_params, task_data, pipeline_na
 
 def launch_task_concise_dict(pipeline_name, variable_parameters_dict, cbrain_api_token, data_provider_id = 710,
                              override_tool_config_id = False, group_id = 10367, user_id = 4022, task_description = '',
-                             custom_json_config_location = False):
+                             custom_json_config_location = False, all_to_keep = None):
 
     '''Uses submit_generic_cbrain_task to launch processing
     
@@ -876,6 +891,16 @@ def launch_task_concise_dict(pipeline_name, variable_parameters_dict, cbrain_api
         The location of the json config file that contains the fixed parameters for the task.
         By default this will be read from the json_configs file unless a different location
         is specified.
+    all_to_keep : list or None, default None
+        A list of the files you want to keep from the subject
+        directory for processing. If None, all files will be
+        kept. If a list, only the files in the list will be
+        kept. If a list, the files that will be removed are
+        ONLY files that are in the same folder as a file that
+        is specified in the list. So if you say you only want
+        some T1 file from the anat dir, it will remove other
+        files from the anat dir, but will leave the func dir,
+        or other session dirs untouched.
         
     Returns
     -------
@@ -893,7 +918,7 @@ def launch_task_concise_dict(pipeline_name, variable_parameters_dict, cbrain_api
     fixed_parameters_dict = grab_json(custom_json_config_location, pipeline_name)
         
     #Construct different dictionaries that will be sent to CBRAIN
-    task_headers, task_params, task_data = construct_generic_cbrain_task_info_dict(cbrain_api_token, group_id, user_id, tool_config_id, data_provider_id, task_description, variable_parameters_dict, fixed_parameters_dict)
+    task_headers, task_params, task_data = construct_generic_cbrain_task_info_dict(cbrain_api_token, group_id, user_id, tool_config_id, data_provider_id, task_description, variable_parameters_dict, fixed_parameters_dict, all_to_keep = all_to_keep)
         
     #Submit task to CBRAIN
     return submit_generic_cbrain_task(task_headers, task_params, task_data, pipeline_name)
@@ -1346,6 +1371,9 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     cbrain_csv_names = [] #cbrain name
     cbrain_csv_local_paths = [] #local path
     subject_external_requirements_list = []
+    all_to_keep_lists = [] #list of lists of files to keep for each subject
+    final_subjects_ids_for_proc = [] #list of subjects that fullfill requirements for processing
+    final_subjects_names_for_proc = [] #list of subjects that fullfill requirements for processing
     for i, temp_subject in enumerate(registered_and_s3_names):
         
         print('Evaluating: {}'.format(temp_subject))
@@ -1361,7 +1389,8 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         #this pipeline and only continue if processing hasn't already been initiated
         #or under certain failure conditions (see documentation for check_rerun_status)
         if False == check_rerun_status(registered_and_s3_ids[i], current_cbrain_tasks, bids_data_provider_id, tool_config_id, rerun_level = 1):
-            print('    Existing CBRAIN tasks indicate that processing is unnecessary, but this isnt used yet...')
+            print('    Existing CBRAIN tasks indicate that processing is unnecessary. Skipping processing. Change rerun_level or delete previous tasks for this subject/pipeline if you want to continue processing.')
+            continue
             
             
         #Check that the subject has requirements satisfiying at least one pipeline specific json in the processing_prerequisites folder
@@ -1381,81 +1410,35 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             
         #Grab files for the subject according to pipeline specific jsons in processing_file_numbers and processing_file_selection folders
         subject_files_list = grab_required_bids_files(temp_subject, file_selection_dict, file_numbers_dict, bucket = bids_bucket, prefix = bids_bucket_prefix, bids_bucket_config = bids_bucket_config)
-        print('    Will attempt to run processing if this subject doesnt already have CBRAIN CSV for current pipeline registered in CBRAIN')
+        all_to_keep_lists.append(subject_files_list)
         
-        text = make_cbrain_csv_text(registered_and_s3_ids[i], temp_subject, registered_and_s3_sizes[i], bids_data_provider_name, user_name, group_name, subject_files_list)
-        cbrain_csv_file_path = os.path.join(cbrain_csv_file_dir, '{}_{}_CbrainId-{}.csv'.format(pipeline_name, temp_subject, registered_and_s3_ids[i]))
-        with open(cbrain_csv_file_path, 'w') as f:
-            f.write(text)
-        cbrain_csv_local_paths.append(cbrain_csv_file_path)
-        cbrain_csv_names.append('{}_{}_CbrainId-{}.csv'.format(pipeline_name, temp_subject, registered_and_s3_ids[i]))
+        #Save subject information with other subjects that are ready for processing
+        all_to_keep_lists.append(subject_files_list)
         subject_external_requirements_list.append(subject_external_requirements)
+        final_subjects_ids_for_proc.append(registered_and_s3_ids[i])
+        final_subjects_names_for_proc.append(temp_subject)
        
     #################################################################################################
     #################################################################################################
-    #Check that the CBRAIN CSV files don't already exist in CBRAIN before
-    #registering them.. then register the ones that didn't exist. Either
-    #throw an error or register new files depending on the value of raise_error_for_duplicate_cbrain_csv_files
-    already_registered_cbrain_csv_files = []
-    unique_cbrain_csv_names = []
-    unique_cbrain_csv_local_paths = []
-    unique_subject_external_requirements = []
-    for i, temp_cbrain_csv in enumerate(cbrain_csv_names):
-        duplicate_found = False
-        for temp_file in data_provider_files:
-            if temp_cbrain_csv == temp_file['name']:
-                already_registered_cbrain_csv_files.append(temp_cbrain_csv)
-                duplicate_found = True
-        if duplicate_found == False:
-            unique_cbrain_csv_names.append(temp_cbrain_csv)
-            unique_cbrain_csv_local_paths.append(cbrain_csv_local_paths[i])
-            unique_subject_external_requirements.append(subject_external_requirements_list[i])
-    print('CBRAIN CSV NAMES')
-    print(cbrain_csv_names)
-    if len(already_registered_cbrain_csv_files) and (raise_error_for_duplicate_cbrain_csv_files == True):
-        raise ValueError('Error: A number of CBRAIN CSV files with the same names are already registered in CBRAIN. Attempting processing will use existing CBRAIN files. Go to CBRAIN and delete files for: {}'.format(cbrain_csv_names))
-    elif len(already_registered_cbrain_csv_files) and (raise_error_for_duplicate_cbrain_csv_files == False):
-        print('Skipping processing for the following files since they were already registered in CBRAIN before initiation of this script. If you want these files to be included in processing, go to the CBRAIN GUI and delete them. Then if you run this script again the previously deleted files will be recreated for processing: {}'.format(already_registered_cbrain_csv_files))
-    print('CBRAIN csv files created that werent already on CBRAIN {}'.format(unique_cbrain_csv_names))
-    for i, temp_cbrain_csv in enumerate(unique_cbrain_csv_names):
-            
-        #Upload the CBRAIN CSV File to S3 and then Register it in CBRAIN
-        upload_cbrain_csv_file(unique_cbrain_csv_local_paths[i], 
-                               bucket = derivatives_bucket, 
-                               prefix = os.path.join(cbrain_logging_folder_prefix, 'cbrain_csvs'), 
-                               bucket_config = bids_bucket_config)
-        register_cbrain_csvs_in_cbrain(temp_cbrain_csv, 
-                                cbrain_api_token, 
-                                user_id = user_id, 
-                                group_id = group_id, 
-                                browse_path = os.path.join(cbrain_logging_folder_prefix, 'cbrain_csvs'), 
-                                data_provider_id = bids_data_provider_id)
-    #####################################################################################################
-    #####################################################################################################
-               
-    #Find all extended file lists in our DP in CBRAIN and start processing with the ones we just uploaded
-    cbrain_extended_file_list_results = find_cbrain_extended_file_list_files(cbrain_api_token, data_provider_id = bids_data_provider_id)
-    for i, temp_cbrain_csv in enumerate(unique_cbrain_csv_names):
-        for temp_file in cbrain_extended_file_list_results:
-            if temp_cbrain_csv.split('/')[-1] == temp_file['name']:
-                
-                #Replace the BidsSubject field with the CBRAIN CSV ID. Importantly
-                #this will only work if the subject has one field that takes the
-                #file type BidsSubject.
-                for temp_requirement in external_requirements_dict.keys():
-                    if external_requirements_dict[temp_requirement] == 'BidsSubject':
-                        print('TEMP FILE: ')
-                        print(temp_file)
-                        unique_subject_external_requirements[i][temp_requirement] = str(temp_file['id'])
-                print('{} via API'.format(temp_file['name']))
+    #Iterate through all subjects who were deemed ready for processing,
+    # and submit task to process their data in CBRAIN.
+    for i, temp_subject in enumerate(final_subjects_ids_for_proc):  
+        #Replace the BidsSubject field with the CBRAIN CSV ID. Importantly
+        #this will only work if the subject has one field that takes the
+        #file type BidsSubject.
+        for temp_requirement in external_requirements_dict.keys():
+            if external_requirements_dict[temp_requirement] == 'BidsSubject':
+                subject_external_requirements_list[i][temp_requirement] = str(temp_subject)
+        print('{} via API'.format(final_subjects_names_for_proc[i]))
 
-                #Run "mark as newer" to be sure the latest version of the subject data
-                #is in the local CBRAIN cache once processing begins
-                for temp_key in unique_subject_external_requirements[i].keys():
-                    cbrain_mark_as_newer(unique_subject_external_requirements[i][temp_key], cbrain_api_token)                
+        #Run "mark as newer" to be sure the latest version of the subject data
+        #is in the local CBRAIN cache once processing begins
+        for temp_key in subject_external_requirements_list[i].keys():
+            cbrain_mark_as_newer(subject_external_requirements_list[i][temp_key], cbrain_api_token)                
 
-                #Launch Processing
-                launch_task_concise_dict(pipeline_name, unique_subject_external_requirements[i], cbrain_api_token, data_provider_id = bids_data_provider_id,
-                                         group_id = group_id, user_id = user_id, task_description = '{} via API'.format(temp_file['name']))
+        #Launch Processing
+        launch_task_concise_dict(pipeline_name, subject_external_requirements_list[i], cbrain_api_token, data_provider_id = bids_data_provider_id,
+                                    group_id = group_id, user_id = user_id, task_description = '{} via API'.format(final_subjects_names_for_proc[i]),
+                                    all_to_keep = all_to_keep_lists[i])
 
     return
