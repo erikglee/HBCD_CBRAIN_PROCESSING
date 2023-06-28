@@ -264,6 +264,79 @@ def upload_cbrain_csv_file(file_name, bucket = 'hbcd-cbrain-test', prefix = 'cbr
         return False
     return True
 
+def upload_processing_config_log(file_name, bucket = 'hbcd-cbrain-test', prefix = 'cbrain_misc/cbrain_processing_configuration_logs', bucket_config = False):
+    """Upload a CBRAIN CSV File to S3 Bucket
+
+    This function will upload an already generated
+    CBRAIN CSV File (i.e. extended file list) to
+    the desired bucket. Then it can later be registered
+    in CBRAIN and used to run processing.
+
+    Parameters
+    ----------
+    file_name : str
+        The name of the file to upload
+    bucket : str, default 'hbcd-cbrain-test'
+        The name of the bucket to upload to
+    prefix : str, default 'cbrain_misc/cbrain_csvs'
+        The prefix to use for the file in the bucket
+    bids_bucket_config : str, default False
+        The path to the config file for the s3 bucket
+        If False, then the default config file will be used.
+        If a string, then that string will be used as the
+        path to the config file.
+
+    Returns
+    -------
+    bool
+        True if file was uploaded successfully,
+        False if not.
+    """
+
+    
+    #Grab config path
+    if bucket_config == False:
+        config_path = ''
+    else:
+        if type(bucket_config) != str:
+            raise NameError('Error: different config path should eithe be string or boolean')
+        else:
+            config_path = bucket_config
+            
+    #Find info from config file    
+    with open(config_path, 'r') as f:
+        lines = f.read().splitlines()
+        for temp_line in lines:
+            if 'access_key' == temp_line[:10]:
+                access_key = temp_line.split('=')[-1].strip()
+            if 'secret_key' == temp_line[:10]:
+                secret_key = temp_line.split('=')[-1].strip()
+            if 'host_base' == temp_line[:9]:
+                host_base = temp_line.split('=')[-1].strip()
+                if 'https' != host_base[:5]:
+                    host_base = 'https://' + host_base
+        
+    #Create s3 client
+    client = boto3.client(
+        's3',
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key,
+        endpoint_url =host_base
+    )
+
+    del access_key, secret_key, host_base
+
+    object_name = os.path.join(prefix, os.path.basename(file_name))
+    print(object_name)
+
+    # Upload the file
+    try:
+        response = client.upload_file(file_name, bucket, object_name)
+    except ClientError as e:
+        logging.error(e)
+        return False
+    return True
+
 
 def check_bids_requirements(subject_id, requirements_dict, bucket = 'hbcd-pilot', prefix = 'assembly_bids', bids_bucket_config = False):
     '''Utility to check if BIDS subject has required files for procesing.
@@ -840,11 +913,16 @@ def submit_generic_cbrain_task(task_headers, task_params, task_data, pipeline_na
         print("Successfully submitted {} processing to CBRAIN for CBRAIN CSV File.".format(pipeline_name))
         task_info = task_response.json()
         print(json.dumps(task_info, indent=4)) #Could return this if we want to use it later...
-        return True
+        json_for_logging = {}
+        json_for_logging['returned_by_cbrain'] = task_info
+        json_for_logging['submitted_task_params'] = task_params
+        json_for_logging['submitted_task_headers'] = task_headers
+        json_for_logging['submitted_task_data'] = task_data
+        return True, json_for_logging
     else:
         print("Failed to submit {} processing to CBRAIN for CBRAIN CSV File with ID.".format(pipeline_name))
         print(task_response.text)
-        return False
+        return False, {}
     
 
 
@@ -921,7 +999,8 @@ def launch_task_concise_dict(pipeline_name, variable_parameters_dict, cbrain_api
     task_headers, task_params, task_data = construct_generic_cbrain_task_info_dict(cbrain_api_token, group_id, user_id, tool_config_id, data_provider_id, task_description, variable_parameters_dict, fixed_parameters_dict, all_to_keep = all_to_keep)
         
     #Submit task to CBRAIN
-    return submit_generic_cbrain_task(task_headers, task_params, task_data, pipeline_name)
+    status, json_for_logging = submit_generic_cbrain_task(task_headers, task_params, task_data, pipeline_name)
+    return status, json_for_logging
 
 
 def find_current_cbrain_tasks(cbrain_api_token, data_provider_id = None):
@@ -1269,7 +1348,8 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                         group_id = '10367', user_id = '4022', bids_bucket_config = '/some/path',
                         bids_bucket = 'hbcd-pilot', bids_bucket_prefix = 'assembly_bids',
                         derivatives_bucket_config = '/some/path', derivatives_bucket = 'hbcd-pilot',
-                        derivatives_bucket_prefix = 'derivatives', bids_data_provider_id = '710', rerun_level = 1):
+                        derivatives_bucket_prefix = 'derivatives', bids_data_provider_id = '710',
+                        rerun_level = 1, logs_directory = None, logs_prefix = 'cbrain_misc'):
     
     '''Function to manage processing of data using CBRAIN
 
@@ -1320,6 +1400,10 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         failed for CBRAIN/Cluster specific reasons. If 2, then the script will 
         also rerun processing in cases where processing failed on the cluster or
         in similar scenarios.
+    logs_directory: str, default None
+        If this path is set, some logs used to configure the CBRAIN processing
+        for a given subject will be saved both to this directory and to the
+        S3 bucket. If None, then no logs will be saved.
     
     '''
 
@@ -1438,8 +1522,16 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             cbrain_mark_as_newer(subject_external_requirements_list[i][temp_key], cbrain_api_token)                
 
         #Launch Processing
-        launch_task_concise_dict(pipeline_name, subject_external_requirements_list[i], cbrain_api_token, data_provider_id = bids_data_provider_id,
+        status, json_for_logging = launch_task_concise_dict(pipeline_name, subject_external_requirements_list[i], cbrain_api_token, data_provider_id = bids_data_provider_id,
                                     group_id = group_id, user_id = user_id, task_description = ' via API',
                                     all_to_keep = all_to_keep_lists[i])
+        if status == False:
+            raise ValueError('Error CBRAIN processing tasked was not submitted for {}. Issue must be resolved for processing to continue.'.format(final_subjects_names_for_proc[i]))
+        else:
+            if type(logs_directory) != type(None):
+                log_file_name = os.path.join(logs_directory, '{}_{}.json'.format(final_subjects_names_for_proc[i], pipeline_name))
+                with open(log_file_name, 'w') as f:
+                    json.dump(json_for_logging, f, indent = 4)
+                upload_processing_config_log(log_file_name, bucket = derivatives_bucket, prefix = logs_prefix, bucket_config = derivatives_bucket_config)
 
     return
