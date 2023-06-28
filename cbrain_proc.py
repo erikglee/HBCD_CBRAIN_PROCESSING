@@ -505,18 +505,23 @@ def grab_required_bids_files(subject_id, requirements_dict, num_requirements_dic
 
     #Iterate through bucket to find BIDS files for this subject
     subject_files = []
+    subject_etags = []
     for page in page_iterator:
         if 'Contents' in page:
             for temp_dict in page['Contents']:
                 subject_files.append('/'.join(temp_dict['Key'].split('/')[-2:]))
+                subject_etags.append(temp_dict['ETag'])
         else:
             print('No BIDS contents found for: {}'.format(subject_id))
 
     print('EXAMPLE_DICT_FROM_BOTO3 {}'.format(temp_dict))
+    
+    sorted_etags = [x for _, x in sorted(zip(subject_files, subject_etags))]
+    sorted_etags.reverse()
     subject_files.sort()
     subject_files.reverse()
     output_file_list = []
-    parent_requirements_satisfied = 0
+    etag_dict = {}
     for i, parent_requirement in enumerate(requirements_dict.keys()):
         temp_requirement_file_list = []
         child_requirements = requirements_dict[parent_requirement]
@@ -531,16 +536,18 @@ def grab_required_bids_files(subject_id, requirements_dict, num_requirements_dic
                 temp_requirement_file_list.append(temp_file)
         
         counter = 0
-        for temp_file in temp_requirement_file_list:
+        for j, temp_file in enumerate(temp_requirement_file_list):
             if num_requirements_dict[parent_requirement] == 'all':
                 output_file_list.append(temp_file)
+                etag_dict[temp_file] = sorted_etags[j]
             elif num_requirements_dict[parent_requirement] > counter:
                 output_file_list.append(temp_file)
+                etag_dict[temp_file] = sorted_etags[j]
                 counter += 1
             else:
                 print('Finishing Requirement {}, {} files already found.'.format(parent_requirement, counter))
                 
-    return output_file_list
+    return output_file_list, etag_dict
 
 def make_cbrain_csv_text(subject_cbrain_id, subject_bids_id, size, data_provider_name, cbrain_user_name, cbrain_group_name, files_list):
     """Internal function to create text for a cbrain csv file
@@ -1455,6 +1462,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     all_to_keep_lists = [] #list of lists of files to keep for each subject
     final_subjects_ids_for_proc = [] #list of subjects that fullfill requirements for processing
     final_subjects_names_for_proc = [] #list of subjects that fullfill requirements for processing
+    etag_dicts_list = [] #list for keeping track of s3 file identifiers
     for i, temp_subject in enumerate(registered_and_s3_names):
         
         print('Evaluating: {}'.format(temp_subject))
@@ -1490,10 +1498,11 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             continue #skip processing if external requirements aren't found
             
         #Grab files for the subject according to pipeline specific jsons in processing_file_numbers and processing_file_selection folders
-        subject_files_list = grab_required_bids_files(temp_subject, file_selection_dict, file_numbers_dict, bucket = bids_bucket, prefix = bids_bucket_prefix, bids_bucket_config = bids_bucket_config)
+        subject_files_list, etag_dict = grab_required_bids_files(temp_subject, file_selection_dict, file_numbers_dict, bucket = bids_bucket, prefix = bids_bucket_prefix, bids_bucket_config = bids_bucket_config)
         
         #Save subject information with other subjects that are ready for processing
         all_to_keep_lists.append(subject_files_list)
+        etag_dicts_list.append(etag_dict)
         subject_external_requirements_list.append(subject_external_requirements)
         final_subjects_ids_for_proc.append(registered_and_s3_ids[i])
         final_subjects_names_for_proc.append(temp_subject)
@@ -1525,6 +1534,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         status, json_for_logging = launch_task_concise_dict(pipeline_name, subject_external_requirements_list[i], cbrain_api_token, data_provider_id = bids_data_provider_id,
                                     group_id = group_id, user_id = user_id, task_description = ' via API',
                                     all_to_keep = all_to_keep_lists[i])
+        json_for_logging['s3_ETag_values'] = etag_dicts_list[i]
         if status == False:
             raise ValueError('Error CBRAIN processing tasked was not submitted for {}. Issue must be resolved for processing to continue.'.format(final_subjects_names_for_proc[i]))
         else:
