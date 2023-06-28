@@ -1446,7 +1446,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         for temp_requirement in external_requirements_dict.keys():
             if external_requirements_dict[temp_requirement] == 'BidsSubject':
                 subject_external_requirements_list[i][temp_requirement] = str(temp_subject)
-        #print('{} via API'.format(final_subjects_names_for_proc[i]))
+        print('Processing {} with {} via API'.format(final_subjects_names_for_proc[i], pipeline_name))
 
         #Run "mark as newer" to be sure the latest version of the subject data
         #is in the local CBRAIN cache once processing begins
