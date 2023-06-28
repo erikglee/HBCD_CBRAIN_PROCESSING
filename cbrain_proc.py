@@ -1238,7 +1238,6 @@ def check_rerun_status(cbrain_subject_id, cbrain_tasks, derivatives_data_provide
     num_rerun_group_1 = 0
     num_rerun_group_2 = 0
     for temp_status in task_statuses:
-        print(temp_status)
         if temp_status in rerun_group_1:
             num_rerun_group_1 += 1
         if temp_status in rerun_group_2:
@@ -1396,11 +1395,8 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         #Check what type of processing has already occured for the subject with
         #this pipeline and only continue if processing hasn't already been initiated
         #or under certain failure conditions (see documentation for check_rerun_status)
-        print('current_id {}'.format(registered_and_s3_ids[i]))
-        print('num_tasks {}'.format(len(current_cbrain_tasks)))
         if False == check_rerun_status(registered_and_s3_ids[i], current_cbrain_tasks, bids_data_provider_id, tool_config_id, rerun_level = 1):
-            print('    Existing CBRAIN tasks indicate that processing is unnecessary. Skipping processing. Change rerun_level or delete previous tasks for this subject/pipeline if you want to continue processing.')
-            continue
+            continue #Check rerun status will print out a message to the user if processing is not going to be rerun
             
             
         #Check that the subject has requirements satisfiying at least one pipeline specific json in the processing_prerequisites folder
