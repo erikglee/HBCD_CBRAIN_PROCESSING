@@ -1238,6 +1238,7 @@ def check_rerun_status(cbrain_subject_id, cbrain_tasks, derivatives_data_provide
     num_rerun_group_1 = 0
     num_rerun_group_2 = 0
     for temp_status in task_statuses:
+        print(temp_status)
         if temp_status in rerun_group_1:
             num_rerun_group_1 += 1
         if temp_status in rerun_group_2:
