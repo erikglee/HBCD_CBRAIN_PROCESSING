@@ -509,11 +509,12 @@ def grab_required_bids_files(subject_id, requirements_dict, num_requirements_dic
         if 'Contents' in page:
             for temp_dict in page['Contents']:
                 subject_files.append('/'.join(temp_dict['Key'].split('/')[-2:]))
-                #print(temp_dict['Key'])
         else:
             print('No BIDS contents found for: {}'.format(subject_id))
 
+    print('EXAMPLE_DICT_FROM_BOTO3 {}'.format(temp_dict))
     subject_files.sort()
+    subject_files.reverse()
     output_file_list = []
     parent_requirements_satisfied = 0
     for i, parent_requirement in enumerate(requirements_dict.keys()):
@@ -915,7 +916,6 @@ def submit_generic_cbrain_task(task_headers, task_params, task_data, pipeline_na
         print(json.dumps(task_info, indent=4)) #Could return this if we want to use it later...
         json_for_logging = {}
         json_for_logging['returned_by_cbrain'] = task_info
-        json_for_logging['submitted_task_params'] = task_params
         json_for_logging['submitted_task_headers'] = task_headers
         json_for_logging['submitted_task_data'] = task_data
         return True, json_for_logging
