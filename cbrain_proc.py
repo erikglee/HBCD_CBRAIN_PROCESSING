@@ -1407,7 +1407,6 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             
         #Grab files for the subject according to pipeline specific jsons in processing_file_numbers and processing_file_selection folders
         subject_files_list = grab_required_bids_files(temp_subject, file_selection_dict, file_numbers_dict, bucket = bids_bucket, prefix = bids_bucket_prefix, bids_bucket_config = bids_bucket_config)
-        all_to_keep_lists.append(subject_files_list)
         
         #Save subject information with other subjects that are ready for processing
         all_to_keep_lists.append(subject_files_list)
