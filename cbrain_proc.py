@@ -1178,7 +1178,7 @@ def find_potential_subjects_for_processing(cbrain_api_token, bids_bucket_config,
     non_registered_subjects = set(s3_subjects) - set(cbrain_subjects)
     missing_in_s3_subjects = set(total_subjects) - set(s3_subjects)
     registered_and_s3 = (total_subjects - missing_in_s3_subjects) - non_registered_subjects
-    print('Total identified subjects: {},\nSubjects Still Needing to Be Registered in CBRAIN: {},\nSubjects Registered in CBRAIN and in S3 (ready to process): {},\nRegistered Subjects Not in S3 (this should be 0): {}\n\n\n'.format(len(total_subjects), len(non_registered_subjects), len(registered_and_s3), len(missing_in_s3_subjects)))
+    print('Total identified subjects: {},\nSubjects Still Needing to Be Registered in CBRAIN: {},\nSubjects Registered in CBRAIN and in S3 (ready to process): {},\nRegistered Subjects Not in S3 (this should be 0): {}\n\n'.format(len(total_subjects), len(non_registered_subjects), len(registered_and_s3), len(missing_in_s3_subjects)))
 
     registered_and_s3_ids = []
     registered_and_s3_names = []
@@ -1439,7 +1439,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     #################################################################################################
     #Iterate through all subjects who were deemed ready for processing,
     # and submit task to process their data in CBRAIN.
-    print('\n\n\n')
+    print('\n\n')
     for i, temp_subject in enumerate(final_subjects_ids_for_proc):  
         #Replace the BidsSubject field with the CBRAIN CSV ID. Importantly
         #this will only work if the subject has one field that takes the
