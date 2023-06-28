@@ -1226,10 +1226,10 @@ def check_rerun_status(cbrain_subject_id, cbrain_tasks, derivatives_data_provide
     task_statuses = []
     task_ids = []
     for temp_task in cbrain_tasks:
-        if temp_task['tool_config_id'] == tool_config_id:
-            if temp_task['results_data_provider_id'] == derivatives_data_provider_id:
+        if temp_task['tool_config_id'] == int(tool_config_id):
+            if temp_task['results_data_provider_id'] == int(derivatives_data_provider_id):
                 try:
-                    if cbrain_subject_id in temp_task['params']['interface_userfile_ids']:
+                    if str(cbrain_subject_id) in temp_task['params']['interface_userfile_ids']:
                         task_statuses.append(temp_task['status'])
                         task_ids.append(temp_task['id'])
                 except:
@@ -1396,6 +1396,8 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         #Check what type of processing has already occured for the subject with
         #this pipeline and only continue if processing hasn't already been initiated
         #or under certain failure conditions (see documentation for check_rerun_status)
+        print('current_id {}'.format(registered_and_s3_ids[i]))
+        print('num_tasks {}'.format(len(current_cbrain_tasks)))
         if False == check_rerun_status(registered_and_s3_ids[i], current_cbrain_tasks, bids_data_provider_id, tool_config_id, rerun_level = 1):
             print('    Existing CBRAIN tasks indicate that processing is unnecessary. Skipping processing. Change rerun_level or delete previous tasks for this subject/pipeline if you want to continue processing.')
             continue
