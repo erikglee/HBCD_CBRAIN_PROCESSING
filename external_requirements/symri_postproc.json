@@ -1,0 +1,5 @@
+{
+    "SubjectDirectory" : "BidsSubject",
+    "CabinetOutput" : "CabinetPrecomputedOutput",
+    "SyMRIDirectory" : "SymriOutput "
+}
