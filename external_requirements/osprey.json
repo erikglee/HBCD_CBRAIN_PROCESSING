@@ -1,4 +1,4 @@
 {
-    "subject_dir" : "BidsSubject",
+    "SubjectDirectory" : "BidsSubject",
     "CabinetOutput" : "CabinetPrecomputedOutput"
 }
