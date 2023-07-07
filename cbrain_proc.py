@@ -1350,7 +1350,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     for temp_requirement_file in requirements_files:
         with open(temp_requirement_file, 'r') as f:
             requirements_dicts.append(json.load(f))
-    print('{} requirements dictionaries: {}\n'.format(pipeline_name, requirements_dicts))
+    print('{} requirements dictionaries: {}'.format(pipeline_name, requirements_dicts))
             
     file_selection_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'processing_file_selection', '{}.json'.format(pipeline_name))
     file_numbers_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'processing_file_numbers', '{}.json'.format(pipeline_name))
@@ -1362,8 +1362,8 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         file_numbers_dict = json.load(f)
     with open(external_requirements_file_path, 'r') as f:
         external_requirements_dict = json.load(f)
-    print('{} external requirements dictionary: {}\n'.format(pipeline_name, external_requirements_dict))
-    print('{} file numbers dictionary: {}\n'.format(pipeline_name, file_numbers_dict))
+    print('{} external requirements dictionary: {}'.format(pipeline_name, external_requirements_dict))
+    print('{} file numbers dictionary: {}'.format(pipeline_name, file_numbers_dict))
     print('{} file selection dictionary: {}\n\n'.format(pipeline_name, file_selection_dict))
     ##################################################################
         
