@@ -832,7 +832,6 @@ def submit_generic_cbrain_task(task_headers, task_params, task_data, pipeline_na
         
     '''
     
-    print(task_data)
     task_response = requests.post(
         url = '/'.join(['https://portal.cbrain.mcgill.ca', 'tasks']),
         headers = task_headers,
@@ -851,6 +850,7 @@ def submit_generic_cbrain_task(task_headers, task_params, task_data, pipeline_na
         return True, json_for_logging
     else:
         print("Failed to submit {} processing to CBRAIN for CBRAIN CSV File with ID.".format(pipeline_name))
+        print("Task Data of failed task: {}".format(task_data))
         print(task_response.text)
         return False, {}
     
