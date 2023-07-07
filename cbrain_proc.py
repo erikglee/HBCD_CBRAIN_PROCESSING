@@ -832,6 +832,7 @@ def submit_generic_cbrain_task(task_headers, task_params, task_data, pipeline_na
         
     '''
     
+    print(task_data)
     task_response = requests.post(
         url = '/'.join(['https://portal.cbrain.mcgill.ca', 'tasks']),
         headers = task_headers,
