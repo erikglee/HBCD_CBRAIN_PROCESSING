@@ -1,3 +1,7 @@
 {
-    "T1" : {"T1w.nii.gz" : true, "rec-undistorted" : false, "acq-svslocalizer" : false}
+    "T1" : {"T1w.nii.gz" : true,
+            "rec-undistorted" : false,
+            "acq-svslocalizer" : false,
+            "acq-mrsLoc" : false,
+            "_QALAS.nii.gz" : false}
 }

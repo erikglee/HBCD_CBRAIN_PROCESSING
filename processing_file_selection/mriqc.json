@@ -1,5 +1,15 @@
 {
-    "FMRI" : {"bold.nii.gz" : true, "rec-undistorted" : false, "rec-biascorrected" : false},
-    "T1" : {"T1w.nii.gz" : true, "rec-undistorted" : false, "acq-svslocalizer" : false},
-    "T2" : {"T2w.nii.gz" : true, "rec-undistorted" : false, "acq-svslocalizer" : false}
+    "FMRI" : {"bold.nii.gz" : true,
+                "rec-undistorted" : false,
+                "rec-biascorrected" : false},
+    "T1" : {"T1w.nii.gz" : true,
+            "rec-undistorted" : false,
+            "acq-svslocalizer" : false,
+            "acq-mrsLocCor" : false,
+            "_QALAS.nii.gz" : false},
+    "T2" : {"T2w.nii.gz" : true,
+            "rec-undistorted" : false,
+            "acq-svslocalizer" : false,
+            "acq-mrsLocCor" : false,
+            "_QALAS.nii.gz" : false}
 }

@@ -1,5 +1,11 @@
 {
-    "DWI_AP" : {"dwi.nii.gz" : true, "dir-AP" : true},
-    "DWI_PA" : {"dwi.nii.gz" : true, "dir-PA" : true},
-    "T2" : {"T2w.nii.gz" : true, "rec-undistorted" : false, "acq-svslocalizer" : false}
+    "DWI_AP" : {"dwi.nii.gz" : true,
+                "dir-AP" : true},
+    "DWI_PA" : {"dwi.nii.gz" : true,
+                "dir-PA" : true},
+        "T2" : {"T2w.nii.gz" : true,
+                "rec-undistorted" : false,
+                "acq-svslocalizer" : false,
+                "acq-mrsLoc" : false,
+                "_QALAS.nii.gz" : false}
 }
