@@ -6,6 +6,6 @@
     "T1" : {"T1w.nii.gz" : true,
             "rec-undistorted" : false,
             "acq-svslocalizer" : false,
-            "acq-mrsLocCor" : false,
+            "acq-mrsLoc" : false,
             "_QALAS.nii.gz" : false}
 }
