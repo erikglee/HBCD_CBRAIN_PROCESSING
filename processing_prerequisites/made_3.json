@@ -1,3 +1,4 @@
 {
-    "MMN" : {"acq-eeg" : true, "task-MMN" : true}
+    "MMN" : {"acq-eeg" : true, "task-MMN" : true},
+    "sessions" : {"sessions.tsv" : true}
 }

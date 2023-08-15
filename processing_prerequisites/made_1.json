@@ -1,3 +1,4 @@
 {
-    "VEP" : {"acq-eeg" : true, "task-VEP" : true}
+    "VEP" : {"acq-eeg" : true, "task-VEP" : true},
+    "sessions" : {"sessions.tsv" : true}
 }

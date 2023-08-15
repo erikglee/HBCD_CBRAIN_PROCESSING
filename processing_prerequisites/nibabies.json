@@ -14,5 +14,6 @@
     "AP_FMAP" : {"epi.nii.gz" : true, 
                 "dir-AP" : true},
     "PA_FMAP" : {"epi.nii.gz" : true, 
-                "dir-PA" : true}
+                "dir-PA" : true},
+    "sessions" : {"sessions.tsv" : true}
 }

@@ -1,3 +1,4 @@
 {
-    "RS" : {"acq-eeg" : true, "task-RS" : true}
+    "RS" : {"acq-eeg" : true, "task-RS" : true},
+    "sessions" : {"sessions.tsv" : true}
 }

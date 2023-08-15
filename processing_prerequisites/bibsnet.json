@@ -8,5 +8,6 @@
             "rec-undistorted" : false,
             "acq-svslocalizer" : false,
             "acq-mrsLoc" : false,
-            "_QALAS.nii.gz" : false}
+            "_QALAS.nii.gz" : false},
+    "sessions" : {"sessions.tsv" : true}
 }
