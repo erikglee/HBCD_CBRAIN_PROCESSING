@@ -1,4 +1,5 @@
 {
     "SubjectDirectory" : "BidsSubject",
-    "CabinetOutput" : "CabinetPrecomputedOutput"
+    "CabinetOutput" : "CabinetPrecomputedOutput",
+    "cabinet_output_json": "4322917"
 }
