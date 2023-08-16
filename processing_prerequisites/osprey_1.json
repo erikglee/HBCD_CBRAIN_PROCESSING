@@ -5,7 +5,7 @@
             "acq-mrsLoc" : false,
             "_QALAS.nii.gz" : false},
     "shortTE" : {"acq-shortTE" : true},
-    "HERCULES" : {"acq-hercules" : true, "dir-AP" : true},
+    "HERCULES" : {"acq-hercules" : true},
     "sessions" : {"sessions.tsv" : true},
     "localizer" : {"mrsLocAx" : false,
                     "oc" : true,
