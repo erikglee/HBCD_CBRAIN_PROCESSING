@@ -1,4 +1,3 @@
 {
-    "FACE" : {"acq-eeg" : true, "task-FACE" : true},
-    "sessions" : {"sessions.tsv" : true}
+    "FACE" : {"acq-eeg" : true, "task-FACE" : true}
 }
