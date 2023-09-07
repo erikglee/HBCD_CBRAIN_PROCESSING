@@ -4,10 +4,5 @@
             "acq-svslocalizer" : false,
             "acq-mrsLoc" : false,
             "_QALAS.nii.gz" : false},
-    "T2" : {"T2w.nii.gz" : true,
-            "rec-undistorted" : false,
-            "acq-svslocalizer" : false,
-            "acq-mrsLoc" : false,
-            "_QALAS.nii.gz" : false},
     "sessions" : {"sessions.tsv" : true}
 }
