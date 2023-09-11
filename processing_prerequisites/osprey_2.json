@@ -7,7 +7,7 @@
     "shortTE" : {"acq-shortTE" : true},
     "HERCULES" : {"acq-hercules" : true},
     "sessions" : {"sessions.tsv" : true},
-    "localizer" : {"mrsLocAx" : true,
+    "localizer" : {"mrsLocCor" : false,
                     "oc" : true,
                     "T2w.nii.gz" : true}
 }
