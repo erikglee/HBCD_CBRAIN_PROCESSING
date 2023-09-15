@@ -11,7 +11,7 @@
                 "_QALAS.nii.gz" : false},
         "shortTE" : {"acq-shortTE" : true},
         "HERCULES" : {"acq-hercules" : true},
-        "localizer" : {"mrsLocAx" : false,
+        "localizer" : {"mrsLocCor" : false,
                         "oc" : true,
                         "T2w.nii.gz" : true}
 }
