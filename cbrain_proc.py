@@ -1417,7 +1417,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             
         #Check that the external requirements are satisfied for the subject (these are pipeline inputs that will be files/file collections
         #that should already be available for the subject on CBRAIN if the subject is ready for processing). Note that
-        #this the files being passed to this function are already specific to a single data provider.
+        #the files being passed to this function are already specific to a single data provider.
         subject_external_requirements = grab_external_requirements(temp_subject, data_provider_files, external_requirements_dict) #implement function for this...
         if subject_external_requirements is None:
             print('    Missing external requirements')
