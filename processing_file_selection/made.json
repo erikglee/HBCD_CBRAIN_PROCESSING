@@ -1,6 +1,0 @@
-{
-    "VEP" : {"acq-eeg" : true, "task-VEP" : true},
-    "RS" : {"acq-eeg" : true, "task-RS" : true},
-    "MMN" : {"acq-eeg" : true, "task-MMN" : true},
-    "FACE" : {"acq-eeg" : true, "task-FACE" : true}
-}

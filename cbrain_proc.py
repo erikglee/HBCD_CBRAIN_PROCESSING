@@ -1342,7 +1342,12 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     with open(tool_config_file, 'r') as f:
         tool_config_dict = json.load(f)
     tool_config_id = str(tool_config_dict[pipeline_name])
-    
+
+    #Load the associated_files dictionary, which tells you which files
+    #are associated with specific requirements (i.e. jsons for nii.gz, sbrefs, etc.)
+    associated_files_file = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'associated_files.json')
+    with open(associated_files_file, 'r') as f:
+        associated_files_dict = json.load(f)    
     
     #Load different json files that are the same for each subject
     requirements_files = glob.glob(os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'processing_prerequisites','{}*.json'.format(pipeline_name)))
@@ -1351,15 +1356,32 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         with open(temp_requirement_file, 'r') as f:
             requirements_dicts.append(json.load(f))
     print('{} requirements dictionaries: {}'.format(pipeline_name, requirements_dicts))
-            
-    file_selection_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'processing_file_selection', '{}.json'.format(pipeline_name))
-    file_numbers_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'processing_file_numbers', '{}.json'.format(pipeline_name))
-    external_requirements_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'external_requirements', '{}.json'.format(pipeline_name))
 
-    with open(file_selection_file_path, 'r') as f:
-        file_selection_dict = json.load(f)
-    with open(file_numbers_file_path, 'r') as f:
-        file_numbers_dict = json.load(f)
+    #Rearange the requirements files dictionaries into one dictionary
+    #that has all the possible file types that we will want to grab.
+    file_selection_dict = {}
+    for temp_dict in requirements_dicts:
+        for temp_key in temp_dict.keys():
+            if temp_key in file_selection_dict.keys():
+                if temp_dict[temp_key] != file_selection_dict[temp_key]:
+                    raise ValueError('Error: {} has conflicting requirements for {}'.format(pipeline_name, temp_key))
+            else:
+                file_selection_dict[temp_key] = temp_dict[temp_key]
+
+    #Go through the files_numbers_dict and figure out how many files of
+    #each type should be included in processing. If the field 'num_to_keep'
+    #is not set, assume all files of that file type should be kept. It is
+    #possible we won't want to use this later and instead just reference
+    #file_selection_dict directly.
+    file_numbers_dict = {}
+    for temp_key in file_selection_dict.keys():
+        if 'num_to_keep' in file_selection_dict[temp_key].keys():
+            file_numbers_dict[temp_key] = file_selection_dict[temp_key]['num_to_keep']
+        else:
+            file_numbers_dict[temp_key] = 'all'
+
+    #Path to external requirements file for the given pipeline      
+    external_requirements_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'external_requirements', '{}.json'.format(pipeline_name))
     with open(external_requirements_file_path, 'r') as f:
         external_requirements_dict = json.load(f)
     print('{} external requirements dictionary: {}'.format(pipeline_name, external_requirements_dict))

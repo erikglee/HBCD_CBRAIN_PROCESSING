@@ -1,6 +1,0 @@
-{
-    "FMRI" : {"bold.nii.gz" : true,
-            "rec-undistorted" : false, 
-            "rec-biascorrected" : false},
-    "sessions" : {"sessions.tsv" : true}
-}

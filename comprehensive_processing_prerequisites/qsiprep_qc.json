@@ -1,0 +1,23 @@
+{
+
+    "DWI_AP" : {"file_naming" : {"dwi.nii.gz" : true,
+                "dir-AP" : true}},
+
+    "DWI_PA" : {"file_naming" : {"dwi.nii.gz" : true,
+                "dir-PA" : true}},
+
+    "T2" : {"file_naming" : {"T2w.nii.gz" : true,
+                "rec-undistorted" : false,
+                "acq-svslocalizer" : false,
+                "acq-mrsLoc" : false,
+                "_QALAS.nii.gz" : false},
+    
+                "qc_criteria" : [{"hbcd_compliants" : true},
+                                    {"qu_motions" : 1},
+                                    {"aqc_motions" : 10000}],
+                "num_to_keep" : 1
+            },
+    
+    "sessions" : {"file_naming" : {"sessions.tsv" : true}}
+
+}

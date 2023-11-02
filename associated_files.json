@@ -1,0 +1,9 @@
+{
+    "_dwi.nii.gz" : ["_dwi.json", "_dwi.bval", "_dwi.bvec",
+                     "_sbref.nii.gz", "_sbref.json", "_sbref.bval",
+                     "_sbref.bvec"],
+    "_bold.nii.gz" : ["_sbref.nii.gz", "_sbref.json",
+                      "_bold.json"],
+    ".nii.gz" : [".json"],
+    "eeg_sdfsdfsdfsdf" : ["eeg_sdsdfsdf"]
+}

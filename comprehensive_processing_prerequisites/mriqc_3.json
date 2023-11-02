@@ -1,0 +1,9 @@
+{
+    
+    "FMRI" : {"file_naming" : {"bold.nii.gz" : true,
+            "rec-undistorted" : false, 
+            "rec-biascorrected" : false}},
+
+    "sessions" : {"file_naming" : {"sessions.tsv" : true}}
+
+}
