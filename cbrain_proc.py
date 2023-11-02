@@ -865,7 +865,7 @@ def check_if_derivatives_exist(subject_name, pipeline_folder, bucket = 'hbcd-pil
     # name and so that later we look for the subject ID at the
     # right level
     full_prefix = os.path.join(prefix, pipeline_folder, subject_name)
-    page_iterator = create_page_iterator(bucket = bucket, prefix = full_prefix, bids_bucket_config = bids_bucket_config)
+    page_iterator = create_page_iterator(bucket = bucket, prefix = full_prefix, derivatives_bucket_config = derivatives_bucket_config)
     for page in page_iterator:
         if 'Contents' in page:
             if len(page['Contents']):
