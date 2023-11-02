@@ -1271,7 +1271,10 @@ def find_cbrain_files_on_dp(cbrain_api_token, data_provider_id = 710):
     return filter_results
 
 
-def grab_external_requirements(subject_name, cbrain_files, requirements_dict):
+def grab_external_requirements(subject_name, cbrain_files, 
+                                requirements_dict,
+                                bids_data_provider_id = None,
+                                derivatives_data_provider_id = None):
     '''Grab's external requirements for a subject
 
     External requirements are either non-BIDS files
@@ -1293,8 +1296,19 @@ def grab_external_requirements(subject_name, cbrain_files, requirements_dict):
     subject_name : str
         Subject name (i.e. sub-001)
     cbrain_files : list of dicts
-        Files on the data provider of interest
+        Files on the data provider of interest. This
+        can be a mix of bids/derivatives DP files if
+        both bids_data_provider_id and derivatives_data_provider_id
+        are specified.
     requirements_dict : dict
+    bids_data_provider_id : int or None, default None
+        If specified, this will restrict the search for
+        BIDS files to the specified data provider
+    derivatives_data_provider_id : int or None, default None
+        If specified, this will restrict the search for
+        derivatives files to the specified data provider.
+        Any non-numeric requirements (i.e. file types) that
+        are not BidsSubjects will be assumed to be derivatives
     
     Returns
     -------
@@ -1317,6 +1331,19 @@ def grab_external_requirements(subject_name, cbrain_files, requirements_dict):
         else:
             for temp_file in cbrain_files:
                 if (temp_file['name'] == subject_name) and (temp_file['type'] == requirements_dict[temp_requirement]):
+                    #Dont use the file if (1) the bids data provider is specified
+                    # (2) the file is a BIDS subject and (3)
+                    # the file comes from a non-BIDS DP
+                    if type(bids_data_provider_id) != type(None):
+                        if (temp_file['type'] == 'BidsSubject') and (bids_data_provider_id != temp_file['data_provider_id']):
+                            continue
+
+                    #Dont use the file if (1) the deriv data provider is specified
+                    # (2) the file is not a BIDS subject and (3)
+                    # the file comes from the BIDS DP
+                    if type(derivatives_data_provider_id) != type(None):
+                        if (temp_file['type'] != 'BidsSubject') and (bids_data_provider_id == temp_file['data_provider_id']):
+                            continue
                     requirement_found = True
                     subject_external_requirements[temp_requirement] = temp_file['id']
                     break
@@ -1593,8 +1620,9 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     ###################################################################################
         
     #Grab some CBRAIN info that will be referenced for all subjects being processed ########
-    current_cbrain_tasks = find_current_cbrain_tasks(cbrain_api_token, data_provider_id = bids_data_provider_id) #this is bids_data_provider_id because we currently only support processing that grabs/saves from one DP
-    data_provider_files = find_cbrain_files_on_dp(cbrain_api_token, data_provider_id = bids_data_provider_id)
+    current_cbrain_tasks = find_current_cbrain_tasks(cbrain_api_token, data_provider_id = derivatives_data_provider_id) #this is bids_data_provider_id because we currently only support processing that grabs/saves from one DP
+    bids_data_provider_files = find_cbrain_files_on_dp(cbrain_api_token, data_provider_id = bids_data_provider_id)
+    derivs_data_provider_files = find_cbrain_files_on_dp(cbrain_api_token, data_provider_id = derivatives_data_provider_id)
     ########################################################################################
     
     
@@ -1647,7 +1675,9 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         #Check that the external requirements are satisfied for the subject (these are pipeline inputs that will be files/file collections
         #that should already be available for the subject on CBRAIN if the subject is ready for processing). Note that
         #the files being passed to this function are already specific to a single data provider.
-        subject_external_requirements = grab_external_requirements(temp_subject, data_provider_files, external_requirements_dict) #implement function for this...
+        subject_external_requirements = grab_external_requirements(temp_subject, bids_data_provider_files + derivs_data_provider_files,
+                                                                    external_requirements_dict, bids_data_provider_id = bids_data_provider_id,
+                                                                    derivatives_data_provider_id = derivatives_data_provider_id) #implement function for this...
         if subject_external_requirements is None:
             print('    Missing external requirements')
             continue #skip processing if external requirements aren't found
@@ -1682,6 +1712,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         #file type BidsSubject.
         for temp_requirement in external_requirements_dict.keys():
             if external_requirements_dict[temp_requirement] == 'BidsSubject':
+                print('Not sure if this ever happens????')
                 subject_external_requirements_list[i][temp_requirement] = str(temp_subject)
         print('Processing {} with {} via API'.format(final_subjects_names_for_proc[i], pipeline_name))
 
