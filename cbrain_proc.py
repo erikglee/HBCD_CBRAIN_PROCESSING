@@ -1587,24 +1587,11 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             else:
                 file_selection_dict[temp_key] = temp_dict[temp_key]
 
-    #Go through the files_numbers_dict and figure out how many files of
-    #each type should be included in processing. If the field 'num_to_keep'
-    #is not set, assume all files of that file type should be kept. It is
-    #possible we won't want to use this later and instead just reference
-    #file_selection_dict directly.
-    file_numbers_dict = {}
-    for temp_key in file_selection_dict.keys():
-        if 'num_to_keep' in file_selection_dict[temp_key].keys():
-            file_numbers_dict[temp_key] = file_selection_dict[temp_key]['num_to_keep']
-        else:
-            file_numbers_dict[temp_key] = 'all'
-
     #Path to external requirements file for the given pipeline      
     external_requirements_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'external_requirements', '{}.json'.format(pipeline_name))
     with open(external_requirements_file_path, 'r') as f:
         external_requirements_dict = json.load(f)
     print('{} external requirements dictionary: {}'.format(pipeline_name, external_requirements_dict))
-    print('{} file numbers dictionary: {}'.format(pipeline_name, file_numbers_dict))
     print('{} file selection dictionary: {}\n\n'.format(pipeline_name, file_selection_dict))
     ##################################################################
         
