@@ -829,7 +829,7 @@ def cbrain_mark_as_newer(file_id, cbrain_api_token):
     return
     
     
-def check_if_derivatives_exist(subject_name, pipeline_folder, bucket = 'hbcd-pilot', prefix = 'derivatives', bids_bucket_config = False):
+def check_if_derivatives_exist(subject_name, pipeline_folder, bucket = 'hbcd-pilot', prefix = 'derivatives', derivatives_bucket_config = False):
     '''Utility to check if a subject has specific BIDs derivatives
     
     Parameters
@@ -1649,7 +1649,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         #Be sure that the current subject doesn't have existing output before starting processing
         if check_if_derivatives_exist(temp_subject, pipeline_name,
                                         bucket = derivatives_bucket, prefix = derivatives_bucket_prefix,
-                                        bids_bucket_config = derivatives_bucket_config):
+                                        derivatives_bucket_config = derivatives_bucket_config):
             print('    Already has derivatives')
             continue
 
