@@ -128,7 +128,7 @@ def find_s3_subjects(bids_bucket_config, bucket = 'hbcd-pilot', prefix = 'assemb
     '''
 
     # Create a PageIterator    
-    page_iterator = create_page_iterator(bucket = bucket, prefix = prefix, bids_bucket_config = bids_bucket_config)
+    page_iterator = create_page_iterator(bucket = bucket, prefix = prefix, bucket_config = bids_bucket_config)
 
     #Iterate through bucket to find potential subjects
     s3_contents = []
