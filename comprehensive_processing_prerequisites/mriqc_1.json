@@ -4,11 +4,7 @@
             "rec-undistorted" : false,
             "acq-svslocalizer" : false,
             "acq-mrsLoc" : false,
-            "_QALAS.nii.gz" : false},
-
-            "qc_criteria" : [{"hbcd_compliants" : true},
-                    {"qu_motions" : 1},
-                    {"aqc_motions" : 10000}]
+            "_QALAS.nii.gz" : false}
             },
 
     "sessions" : {"file_naming" : {"sessions.tsv" : true}}
