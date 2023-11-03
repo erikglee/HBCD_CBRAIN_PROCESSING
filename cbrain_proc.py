@@ -262,7 +262,6 @@ def upload_processing_config_log(file_name, bucket = 'hbcd-cbrain-test', prefix 
     del access_key, secret_key, host_base
 
     object_name = os.path.join(prefix, os.path.basename(file_name))
-    print(object_name)
 
     # Upload the file
     try:
