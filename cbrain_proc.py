@@ -150,17 +150,17 @@ def find_s3_subjects(bids_bucket_config, bucket = 'hbcd-pilot', prefix = 'assemb
     return s3_subjects
 
 
-def create_page_iterator(bucket = 'hbcd-pilot', prefix = 'derivatives', bids_bucket_config = False, return_client_instead = False):
+def create_page_iterator(bucket = 'hbcd-pilot', prefix = 'derivatives', bucket_config = False, return_client_instead = False):
     '''Utility to create a page iterator for s3 bucket'''
     
     #Grab config path
-    if bids_bucket_config == False:
+    if bucket_config == False:
         config_path = ''
     else:
-        if type(bids_bucket_config) != str:
+        if type(bucket_config) != str:
             raise NameError('Error: different config path should eithe be string or boolean')
         else:
-            config_path = bids_bucket_config
+            config_path = bucket_config
             
     #Find info from config file    
     with open(config_path, 'r') as f:
@@ -329,7 +329,7 @@ def check_bids_requirements(subject_id, requirements_dict, qc_df = None, bucket 
         prefix_offset = prefix_offset - 1
         
     # Create a PageIterator from the Paginator
-    page_iterator = create_page_iterator(bucket = bucket, prefix = full_prefix, bids_bucket_config = bids_bucket_config)
+    page_iterator = create_page_iterator(bucket = bucket, prefix = full_prefix, bucket_config = bids_bucket_config)
 
     #Iterate through bucket to find BIDS files for this subject
     subject_files = []
@@ -493,7 +493,7 @@ def grab_required_bids_files(subject_id, requirements_dict, qc_df = None, bucket
         prefix_offset = prefix_offset - 1
         
     # Create a PageIterator from the Paginator
-    page_iterator = create_page_iterator(bucket = bucket, prefix = full_prefix, bids_bucket_config = bids_bucket_config)
+    page_iterator = create_page_iterator(bucket = bucket, prefix = full_prefix, bucket_config = bids_bucket_config)
 
     #Iterate through bucket to find BIDS files for this subject
     subject_files = []
@@ -644,7 +644,7 @@ def grab_required_bids_files(subject_id, requirements_dict, qc_df = None, bucket
         
     #Also find all the various files that are associated with the requirements
     if type(associated_files_dict) != type(None):
-        client = create_page_iterator(bucket = bucket, prefix = full_prefix, bids_bucket_config = bids_bucket_config, return_client_instead = True)
+        client = create_page_iterator(bucket = bucket, prefix = full_prefix, bucket_config = bids_bucket_config, return_client_instead = True)
         
         # Create a reusable Paginator
         paginator = client.get_paginator('list_objects')
@@ -865,7 +865,7 @@ def check_if_derivatives_exist(subject_name, pipeline_folder, bucket = 'hbcd-pil
     # name and so that later we look for the subject ID at the
     # right level
     full_prefix = os.path.join(prefix, pipeline_folder, subject_name)
-    page_iterator = create_page_iterator(bucket = bucket, prefix = full_prefix, derivatives_bucket_config = derivatives_bucket_config)
+    page_iterator = create_page_iterator(bucket = bucket, prefix = full_prefix, bucket_config = derivatives_bucket_config)
     for page in page_iterator:
         if 'Contents' in page:
             if len(page['Contents']):
