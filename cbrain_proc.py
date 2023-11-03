@@ -377,7 +377,8 @@ def check_bids_requirements(subject_id, requirements_dict, qc_df = None, bucket 
                     #Grab partial df with just the current file's ratings
                     partial_df = qc_df[qc_df['nifti_names'].str.contains(temp_file)]
                     if len(partial_df) == 0:
-                        raise NameError('Error: No QC info for {}'.format(temp_file))
+                        print('Warning: Subject has QC file but missing entries, retry proc later {}'.format(temp_file))
+                        return False
                     
                     #Iterate through each QC requirement (the requirements are
                     #stored as a list of dictionaries, each with one key/value pair)
