@@ -10,6 +10,8 @@ import logging
 import inspect
 import pandas as pd
 import botocore
+import datetime 
+
 
 
 #WHAT DO WE NEED TO IMPLEMENT.
@@ -680,7 +682,10 @@ def grab_required_bids_files(subject_id, requirements_dict, qc_df = None, bucket
         output_file_list = list(set(output_file_list + new_files))
         output_file_list.sort()
 
-    print(metadata_dict)
+    for a in metadata_dict.keys():
+        for b in metadata_dict[a].keys():
+             if isinstance(metadata_dict[a][b], datetime.datetime):
+                metadata_dict[a][b] = metadata_dict[a][b].isoformat()
 
     return output_file_list, metadata_dict
 
@@ -1587,7 +1592,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     all_to_keep_lists = [] #list of lists of files to keep for each subject
     final_subjects_ids_for_proc = [] #list of subjects that fullfill requirements for processing
     final_subjects_names_for_proc = [] #list of subjects that fullfill requirements for processing
-    etag_dicts_list = [] #list for keeping track of s3 file identifiers
+    metadata_dicts_list = [] #list for keeping track of s3 file identifiers
     for i, temp_subject in enumerate(registered_and_s3_names):
         
         print('Evaluating: {}'.format(temp_subject))
@@ -1640,14 +1645,14 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             continue #skip processing if external requirements aren't found
             
         #Grab files for the subject according to pipeline specific jsons in processing_file_numbers and processing_file_selection folders
-        subject_files_list, etag_dict = grab_required_bids_files(temp_subject, file_selection_dict, qc_df = subj_ses_qc_file,
+        subject_files_list, metadata_dict = grab_required_bids_files(temp_subject, file_selection_dict, qc_df = subj_ses_qc_file,
                                                                  bucket = bids_bucket, prefix = bids_bucket_prefix,
                                                                  bids_bucket_config = bids_bucket_config,
                                                                  session = ses_name, associated_files_dict = associated_files_dict)
 
         #Save subject information with other subjects that are ready for processing
         all_to_keep_lists.append(subject_files_list)
-        etag_dicts_list.append(etag_dict)
+        metadata_dicts_list.append(metadata_dict)
         subject_external_requirements_list.append(subject_external_requirements)
         final_subjects_ids_for_proc.append(registered_and_s3_ids[i])
         final_subjects_names_for_proc.append(temp_subject)
@@ -1675,7 +1680,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         status, json_for_logging = launch_task_concise_dict(pipeline_name, subject_external_requirements_list[i], cbrain_api_token, data_provider_id = derivatives_data_provider_id,
                                     group_id = group_id, user_id = user_id, task_description = ' via API',
                                     all_to_keep = all_to_keep_lists[i])
-        json_for_logging['s3_ETag_values'] = etag_dicts_list[i]
+        json_for_logging['s3_metadata'] = metadata_dicts_list[i]
         if status == False:
             raise ValueError('Error CBRAIN processing tasked was not submitted for {}. Issue must be resolved for processing to continue.'.format(final_subjects_names_for_proc[i]))
         else:
