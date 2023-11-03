@@ -650,6 +650,7 @@ def grab_required_bids_files(subject_id, requirements_dict, qc_df = None, bucket
         paginator = client.get_paginator('list_objects')
         # Create a PageIterator from the Paginator
         page_iterator = paginator.paginate(Bucket=bucket, Prefix=prefix)
+        new_files = []
         for temp_file in output_file_list:
             for temp_key in associated_files_dict.keys():
                 if temp_key in temp_file:
@@ -660,8 +661,11 @@ def grab_required_bids_files(subject_id, requirements_dict, qc_df = None, bucket
                             if 'Contents' in page:
                                 for temp_dict in page['Contents']:
                                     new_file_name = temp_dict['Key'].split(subject_with_slashes)[-1]
-                                    output_file_list.append(new_file_name)
+                                    new_files.append(new_file_name)
                                     etag_dict[new_file_name] = temp_dict['ETag'].split(subject_with_slashes)[-1]
+
+        output_file_list = list(set(output_file_list + new_files))
+        output_file_list.sort()
 
     return output_file_list, etag_dict
 
