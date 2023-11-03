@@ -1650,7 +1650,6 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         #Check that the subject has requirements satisfiying at least one pipeline specific json in the processing_prerequisites folder
         requirements_satisfied = 0
         for temp_requirement in requirements_dicts:
-            print(bids_bucket_config)
             requirements_satisfied += int(check_bids_requirements(temp_subject, temp_requirement,
                                                                   bucket = bids_bucket, prefix = bids_bucket_prefix,
                                                                   bids_bucket_config = bids_bucket_config,
