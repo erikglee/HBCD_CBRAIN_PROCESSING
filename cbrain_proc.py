@@ -498,6 +498,7 @@ def grab_required_bids_files(subject_id, requirements_dict, qc_df = None, bucket
     #Iterate through bucket to find BIDS files for this subject
     subject_files = []
     subject_etags = []
+    subject_metadata = []
     subject_full_names = []
     subject_with_slashes = '/' + subject_id + '/'
     for page in page_iterator:
@@ -514,20 +515,25 @@ def grab_required_bids_files(subject_id, requirements_dict, qc_df = None, bucket
                 if skip_file == 0:
                     subject_files.append(partial_path)
                     subject_etags.append(temp_dict['ETag'])
+                    subject_metadata.append(temp_dict)
         else:
             print('No BIDS contents found for: {}'.format(subject_id))
     
     sorted_etags = [x for _, x in sorted(zip(subject_files, subject_etags))]
     sorted_etags.reverse()
+    sorted_metadata = [x for _, x in sorted(zip(subject_files, subject_metadata))]
+    sorted_metadata.reverse()
     sorted_full_names = [x for _, x in sorted(zip(subject_files, subject_full_names))]
     sorted_full_names.reverse()
     subject_files.sort()
     subject_files.reverse()
     output_file_list = []
     etag_dict = {}
+    metadata_dict = {}
     for i, parent_requirement in enumerate(requirements_dict.keys()):
         temp_requirement_file_list = []
         temp_requirement_etag_list = []
+        temp_requirements_metadata_list = []
         child_requirements = requirements_dict[parent_requirement]['file_naming']
         for j, temp_file in enumerate(subject_files):
             child_requirements_satisfied = 0
@@ -539,6 +545,7 @@ def grab_required_bids_files(subject_id, requirements_dict, qc_df = None, bucket
             if child_requirements_satisfied == len(child_requirements.keys()):
                 temp_requirement_file_list.append(temp_file)
                 temp_requirement_etag_list.append(sorted_etags[j])
+                temp_requirements_metadata_list.append(sorted_metadata[j])
         
         counter = 0
         partial_output_file_list = []
@@ -595,10 +602,12 @@ def grab_required_bids_files(subject_id, requirements_dict, qc_df = None, bucket
                     partial_output_file_list.append(temp_file)
                     partial_output_file_list_qc.append(qc_values)
                     etag_dict[temp_file] = temp_requirement_etag_list[j]
+                    metadata_dict[temp_file] = temp_requirements_metadata_list[j]
                 elif requirements_dict[parent_requirement]['num_to_keep'] > counter:
                     partial_output_file_list.append(temp_file)
                     partial_output_file_list_qc.append(qc_values)
                     etag_dict[temp_file] = temp_requirement_etag_list[j]
+                    metadata_dict[temp_file] = temp_requirements_metadata_list[j]
                     counter += 1
                 else:
                     #Check which of the existing files has the worst QC values
@@ -627,7 +636,9 @@ def grab_required_bids_files(subject_id, requirements_dict, qc_df = None, bucket
                         #current file
                         if worst_existing_file_qc[temp_qc_item] > qc_values[temp_qc_item]:
                             del etag_dict[partial_output_file_list[worst_existing_file_qc_index]]
+                            del metadata_dict[partial_output_file_list[worst_existing_file_qc_index]]
                             etag_dict[temp_file] = temp_requirement_etag_list[j]
+                            metadata_dict[temp_file] = temp_requirements_metadata_list[j]
                             partial_output_file_list[worst_existing_file_qc_index] = temp_file
                             partial_output_file_list_qc[worst_existing_file_qc_index] = qc_values
                             break
@@ -663,11 +674,14 @@ def grab_required_bids_files(subject_id, requirements_dict, qc_df = None, bucket
                                     new_file_name = temp_dict['Key'].split(subject_with_slashes)[-1]
                                     new_files.append(new_file_name)
                                     etag_dict[new_file_name] = temp_dict['ETag'].split(subject_with_slashes)[-1]
+                                    metadata_dict[new_file_name] = temp_dict
 
         output_file_list = list(set(output_file_list + new_files))
         output_file_list.sort()
 
-    return output_file_list, etag_dict
+    print(metadata_dict)
+
+    return output_file_list, metadata_dict
 
 def register_cbrain_csvs_in_cbrain(file_name, cbrain_api_token, user_id = 4022, group_id = 10367, browse_path = "cbrain_misc/cbrain_csvs", data_provider_id = 710):
     '''Register CBRAIN CSVs in CBRAIN
