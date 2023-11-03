@@ -1685,7 +1685,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             raise ValueError('Error CBRAIN processing tasked was not submitted for {}. Issue must be resolved for processing to continue.'.format(final_subjects_names_for_proc[i]))
         else:
             if type(logs_directory) != type(None):
-                log_file_name = os.path.join(logs_directory, '{}_{}.json'.format(final_subjects_names_for_proc[i], pipeline_name))
+                log_file_name = os.path.join(logs_directory, '{}_{}_UMNProcDetails.json'.format(final_subjects_names_for_proc[i], pipeline_name))
                 with open(log_file_name, 'w') as f:
                     json.dump(json_for_logging, f, indent = 4)
                 #derivatives_bucket_prefix
