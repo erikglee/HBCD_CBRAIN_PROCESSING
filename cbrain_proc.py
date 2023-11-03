@@ -665,55 +665,6 @@ def grab_required_bids_files(subject_id, requirements_dict, qc_df = None, bucket
 
     return output_file_list, etag_dict
 
-def make_cbrain_csv_text(subject_cbrain_id, subject_bids_id, size, data_provider_name, cbrain_user_name, cbrain_group_name, files_list):
-    """Internal function to create text for a cbrain csv file
-    
-    Creates text for a CBRAIN CSV file or extended file list.
-    This text will still need to be saved to a file and uploaded/
-    registered in CBRAIN.
-    
-    Parameters
-    ----------
-    subject_cbrain_id : str
-        The CBRAIN ID of the subject
-    subject_bids_id : str
-        The BIDS ID of the subject
-        (i.e. sub-01)
-    size : str
-        The size of the subject's data
-        (this is grabbed from CBRAIN)
-    data_provider_name : str
-        The name of the CBRAIN data provider.
-        This is different than the numeric ID!
-    cbrain_user_name : str
-        The name of the CBRAIN user that is
-        doing processing.
-    cbrain_group_name : str
-        The name of the CBRAIN group that this subject
-        belongs to
-    files_list : list
-        List of files to be associated with the subject
-        in this CBRAIN CSV file.
-    
-    Returns
-    -------
-    str
-        Text for a CBRAIN CSV file or extended file list.
-    
-    """
-    
-    text_template_pt1 = '{ID},"{sub}",{size},"BidsSubject","{data_provider}","{user_name}","{group_name}",'
-    text_template_pt2 = 'all_to_keep"":{file_insert_text}'
-    
-    file_insert_text = '[""'
-    for temp_file in files_list:
-        file_insert_text = file_insert_text + temp_file + '"",""'
-    file_insert_text = file_insert_text[:-3] + ']'
-    final_text = text_template_pt1.format(ID=subject_cbrain_id,sub=subject_bids_id,data_provider=data_provider_name, user_name=cbrain_user_name, group_name=cbrain_group_name, size=size)
-    final_text = final_text + '"{""' + text_template_pt2.format(file_insert_text=file_insert_text) + '}"\n'
-    return final_text
-
-
 def register_cbrain_csvs_in_cbrain(file_name, cbrain_api_token, user_id = 4022, group_id = 10367, browse_path = "cbrain_misc/cbrain_csvs", data_provider_id = 710):
     '''Register CBRAIN CSVs in CBRAIN
 
