@@ -1,3 +1,4 @@
 {"LocalizerRegistration": true,
  "OSPREYOutputDirectoryName": "qwerty",
- "LocSearchTerm": "*mrsLocAx*.nii*"}
+ "LocSearchTerm": "*mrsLocAx*.nii*",
+ "derivatives_prefix": ""}
