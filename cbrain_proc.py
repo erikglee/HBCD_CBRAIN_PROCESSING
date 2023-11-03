@@ -1688,6 +1688,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                 log_file_name = os.path.join(logs_directory, '{}_{}.json'.format(final_subjects_names_for_proc[i], pipeline_name))
                 with open(log_file_name, 'w') as f:
                     json.dump(json_for_logging, f, indent = 4)
-                upload_processing_config_log(log_file_name, bucket = derivatives_bucket, prefix = logs_prefix, bucket_config = derivatives_bucket_config)
+                #derivatives_bucket_prefix
+                upload_processing_config_log(log_file_name, bucket = derivatives_bucket, prefix = os.path.join(derivatives_bucket_prefix, logs_prefix), bucket_config = derivatives_bucket_config)
 
     return
