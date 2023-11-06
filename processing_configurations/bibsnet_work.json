@@ -1,2 +1,3 @@
 {"bibnset_output_dir": "qwerty",
- "derivatives_prefix": ""}
+ "derivatives_prefix": "",
+ "end_stage" : "postbibsnet"}
