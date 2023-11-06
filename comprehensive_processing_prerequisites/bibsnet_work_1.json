@@ -8,7 +8,8 @@
 
             "qc_criteria" : [{"hbcd_compliants" : true},
                                 {"qu_motions" : 1},
-                                {"aqc_motions" : 10000}]
+                                {"aqc_motions" : 10000}],
+            "num_to_keep" : 1
             },
 
     "T2" : {"file_naming" : {"T2w.nii.gz" : true,
