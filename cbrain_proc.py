@@ -583,6 +583,8 @@ def grab_required_bids_files(subject_id, requirements_dict, qc_df = None, bucket
                                     temp_bool_str = 'YES'
                                 else:
                                     temp_bool_str = 'NO'
+                                print(partial_df[temp_key].values[0])
+                                print(type(partial_df[temp_key].values[0]))
                                 if partial_df[temp_key].values[0].upper() != temp_bool_str:
                                     #print(partial_df[temp_key].values[0])
                                     #print(temp_qc_criteria[temp_key])
