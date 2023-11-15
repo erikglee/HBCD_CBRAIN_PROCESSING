@@ -7,10 +7,10 @@
                 "_QALAS.nii.gz" : false},
 
         "qc_criteria" : [{"hbcd_compliants" : true},
-                                {"qu_motions" : 1},
-                                {"aqc_motions" : 10000}],
+                            {"qu_motions" : 1},
+                            {"aqc_motions" : 10000}],
         "num_to_keep" : 1
-                },
+        },
 
         "shortTE" : {"file_naming" : {"acq-shortTE" : true}},
 
@@ -20,6 +20,7 @@
 
         "localizer" : {"file_naming" : {"mrsLocCor" : false,
                         "oc" : true,
-                        "T2w.nii.gz" : true}}
+                        "T2w.nii.gz" : true,
+                        "rec-undistorted" : false}}
 
 }
