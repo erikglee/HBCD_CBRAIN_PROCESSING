@@ -1650,7 +1650,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                 requirements_satisfied += int(temp_req_output)
             
         if (requirements_satisfied == 0) or (none_found == 1):
-            print('    Requirements not satisfied (or some QC info is missing.)')
+            print('    Requirements not satisfied')
             continue
             
         #Check that the external requirements are satisfied for the subject (these are pipeline inputs that will be files/file collections
