@@ -377,8 +377,8 @@ def check_bids_requirements(subject_id, requirements_dict, qc_df = None, bucket 
                     #Grab partial df with just the current file's ratings
                     partial_df = qc_df[qc_df['nifti_names'].str.contains(temp_file)]
                     if len(partial_df) == 0:
-                        print('Warning: Subject has QC file but missing entries, retry proc later {}'.format(temp_file))
-                        return False
+                        print('    Warning: Subject has QC file but missing entries, retry proc later ({})'.format(temp_file))
+                        return None
                     
                     #Iterate through each QC requirement (the requirements are
                     #stored as a list of dictionaries, each with one key/value pair)
@@ -1636,14 +1636,21 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             
         #Check that the subject has requirements satisfiying at least one pipeline specific json in the processing_prerequisites folder
         requirements_satisfied = 0
+        none_found = 0
         for temp_requirement in requirements_dicts:
-            requirements_satisfied += int(check_bids_requirements(temp_subject, temp_requirement,
-                                                                  bucket = bids_bucket, prefix = bids_bucket_prefix,
-                                                                  bids_bucket_config = bids_bucket_config,
-                                                                  session = ses_name, qc_df = subj_ses_qc_file))
+            temp_req_output = check_bids_requirements(temp_subject, temp_requirement,
+                                                                bucket = bids_bucket, prefix = bids_bucket_prefix,
+                                                                bids_bucket_config = bids_bucket_config,
+                                                                session = ses_name, qc_df = subj_ses_qc_file)
+            #If return == None, this is because some QC info was expected but is missing
+            if type(temp_req_output) == type(None):
+                none_found = 1
+            #Otherwise, a requirement was either passed or failed as expected
+            else:
+                requirements_satisfied += int(temp_req_output)
             
-        if requirements_satisfied == 0:
-            print('    Requirements not satisfied')
+        if (requirements_satisfied == 0) or (none_found == 1):
+            print('    Requirements not satisfied (or some QC info is missing.)')
             continue
             
         #Check that the external requirements are satisfied for the subject (these are pipeline inputs that will be files/file collections
