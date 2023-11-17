@@ -1555,7 +1555,10 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     with open(associated_files_file, 'r') as f:
         associated_files_dict = json.load(f)    
     
-    #Load different json files that are the same for each subject
+    #Load the "comprehensive_processing_prerequisites" json files that are the same for each subject
+    #These files at least say which files are required for processing, and may also specify other
+    #requirements such as the number of files required for processing or whether any QC requirements
+    #need to be met for a file to be included in processing
     requirements_files = glob.glob(os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'comprehensive_processing_prerequisites','{}*.json'.format(pipeline_name)))
     requirements_dicts = []
     for temp_requirement_file in requirements_files:
