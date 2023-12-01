@@ -410,7 +410,7 @@ def check_bids_requirements(subject_id, requirements_dict, qc_df = None, bucket 
                             #Otherwise assume the requirement is a number, and
                             #make sure the observed value is less than the requirement
                             else:
-                                if partial_df[temp_key].values[0] > temp_qc_criteria[temp_key]:
+                                if (partial_df[temp_key].values[0] > temp_qc_criteria[temp_key]) or np.isnan(partial_df[temp_key].values[0]):
                                     #print('{}: {}'.format(temp_key, partial_df[temp_key].values[0]))
                                     requirement_disqualified = 1
                              
@@ -602,7 +602,7 @@ def grab_required_bids_files(subject_id, requirements_dict, qc_df = None, bucket
                         #Otherwise assume the requirement is a number, and
                         #make sure the observed value is less than the requirement
                         else:
-                            if partial_df[temp_key].values[0] > temp_qc_criteria[temp_key]:
+                            if (partial_df[temp_key].values[0] > temp_qc_criteria[temp_key]) or (np.isnan(partial_df[temp_key].values[0])):
                                 #print('{}: {}'.format(temp_key, partial_df[temp_key].values[0]))
                                 requirement_disqualified = 1
                             else:
