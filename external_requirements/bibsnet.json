@@ -1,3 +1,4 @@
 {
-    "subject_dir" : "BidsSubject"
+    "subject_dir" : "BidsSubject",
+    "BibsnetWorkManEditsDir" : "BibsnetWorkManEdits"
 }
