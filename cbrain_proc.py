@@ -11,6 +11,7 @@ import inspect
 import pandas as pd
 import botocore
 import datetime 
+import re
 
 
 
@@ -1559,7 +1560,15 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     #These files at least say which files are required for processing, and may also specify other
     #requirements such as the number of files required for processing or whether any QC requirements
     #need to be met for a file to be included in processing
-    requirements_files = glob.glob(os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'comprehensive_processing_prerequisites','{}*.json'.format(pipeline_name)))
+    #requirements_files = glob.glob(os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'comprehensive_processing_prerequisites','{}*.json'.format(pipeline_name)))
+    requirements_files = []
+    comp_proc_recs_dir = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'comprehensive_processing_prerequisites')
+    for filename in os.listdir(comp_proc_recs_dir):
+        # Use regular expression to match pipeline name with or without underscore and number
+        match = re.match(rf"^{pipeline_name}(?:_[0-9]+)?\.json$", filename)
+        if match:
+            requirements_files.append(os.path.join(comp_proc_recs_dir, filename))
+
     requirements_dicts = []
     for temp_requirement_file in requirements_files:
         with open(temp_requirement_file, 'r') as f:
