@@ -1,5 +1,5 @@
 {
     "SubjectDirectory" : "BidsSubject",
-    "CabinetOutput" : "CabinetPrecomputedOutput",
+    "CabinetOutput" : "BibsnetOutput",
     "CabinetOutputJson": "4322917"
 }
