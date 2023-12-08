@@ -702,6 +702,15 @@ def grab_required_bids_files(subject_id, requirements_dict, qc_df = None, bucket
 
     return output_file_list, metadata_dict
 
+def is_qc_info_required(requirement_dictionary):
+    '''Return True if QC info is required for any given requirement'''
+    
+    for temp_req in requirement_dictionary.keys():
+        if 'qc_criteria' in requirement_dictionary[temp_req]:
+            return True
+    
+    return False
+
 def register_cbrain_csvs_in_cbrain(file_name, cbrain_api_token, user_id = 4022, group_id = 10367, browse_path = "cbrain_misc/cbrain_csvs", data_provider_id = 710):
     '''Register CBRAIN CSVs in CBRAIN
 
@@ -1585,6 +1594,10 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                     raise ValueError('Error: {} has conflicting requirements for {}'.format(pipeline_name, temp_key))
             else:
                 file_selection_dict[temp_key] = temp_dict[temp_key]
+    
+    #If any of the requirements are dependent on QC info, return True
+    #otherwise return false and allow processing even when QC file is missing
+    qc_info_required = is_qc_info_required(file_selection_dict)
 
     #Path to external requirements file for the given pipeline      
     external_requirements_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'external_requirements', '{}.json'.format(pipeline_name))
@@ -1621,14 +1634,18 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         
         print('Evaluating: {}'.format(temp_subject))
 
-        #Grab the QC file for this subject so we can figure out which files can be used for processing:
+        #Grab the QC file for this subject so we can figure out which files can be used for processing.
+        #If no QC requirements are specified in the comprehensive processing prerequisites, then the QC file will be ignored.
         if type(session_qc_files_root_dir) != type(None):
             subj_ses_qc_file_path = os.path.join(session_qc_files_root_dir, '{}_{}.csv'.format(temp_subject, ses_name))
-            if os.path.exists(subj_ses_qc_file_path) == False:
+            if (os.path.exists(subj_ses_qc_file_path) == False) and (qc_info_required == True):
                 print('    Skipping Processing - No QC file found for subject')
                 continue
             else:
-                subj_ses_qc_file = pd.read_csv(subj_ses_qc_file_path)
+                if qc_info_required == False:
+                    subj_ses_qc_file = None
+                else:
+                    subj_ses_qc_file = pd.read_csv(subj_ses_qc_file_path)
         else:
             subj_ses_qc_file = None
         
