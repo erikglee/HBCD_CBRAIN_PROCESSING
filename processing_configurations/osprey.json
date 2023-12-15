@@ -4,5 +4,5 @@
     "LocSearchTerm": "*mrsLocAx*.nii*",
     "derivatives_prefix": "",
     "TermsNotAllowedInAnat" : "mrs Loc",
-    "PreferredAnatModality" : "T2w"
+    "PreferredAnatModality" : "T1w"
 }
