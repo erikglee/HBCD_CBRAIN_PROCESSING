@@ -3,6 +3,6 @@
     "OSPREYOutputDirectoryName": "qwerty",
     "LocSearchTerm": "*mrsLocAx*.nii*",
     "derivatives_prefix": "",
-    "TermsNotAllowedInAnat" : "mrs Loc",
+    "TermsNotAllowedInAnat" : ["mrs", "Loc"],
     "PreferredAnatModality" : "T1w"
 }
