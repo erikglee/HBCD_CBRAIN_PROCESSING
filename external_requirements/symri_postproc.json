@@ -1,5 +1,5 @@
 {
     "SubjectDirectory" : "BidsSubject",
-    "CABINET_Directory" : "BibsnetOutput",
+    "BIBSNET_Directory" : "BibsnetOutput",
     "SyMRIDirectory" : "SymriOutput"
 }
