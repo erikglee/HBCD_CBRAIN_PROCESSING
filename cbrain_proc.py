@@ -138,9 +138,10 @@ def find_s3_subjects(bids_bucket_config, bucket = 'hbcd-pilot', prefix = 'assemb
     potential_subjects = []
     #potential_subjects_dates = []
     for page in page_iterator:
-        for temp_dict in page['Contents']:
-            potential_subjects.append(temp_dict['Key'].split('/')[1])
-            #potential_subjects_dates.append(temp_dict['LastModified'])
+        if page.get('Contents', None):
+            for temp_dict in page['Contents']:
+                potential_subjects.append(temp_dict['Key'].split('/')[1])
+                #potential_subjects_dates.append(temp_dict['LastModified'])
 
     #Find unique files starting with "sub-*"
     potential_subjects = list(set(potential_subjects))
