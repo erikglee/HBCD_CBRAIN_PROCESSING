@@ -1,5 +1,6 @@
 {
     "SubjectDirectory" : "BidsSubject",
     "BIBSNET_Directory" : "BibsnetOutput",
-    "SyMRIDirectory" : "SymriOutput"
+    "SyMRIDirectory" : "SymriOutput",
+    "RegionGroupingsJSON" : "5031527"
 }
