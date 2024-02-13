@@ -377,7 +377,7 @@ def check_bids_requirements(subject_id, requirements_dict, qc_df = None, bucket 
                 if (type(qc_df) != type(None)) and ('qc_criteria' in requirements_dict[parent_requirement].keys()):
                     
                     #Grab partial df with just the current file's ratings
-                    partial_df = qc_df[qc_df['nifti_names'].str.contains(temp_file)]
+                    partial_df = qc_df[qc_df['filename'].str.contains(temp_file.split('/')[-1])]
                     if len(partial_df) == 0:
                         print('    Warning: Subject has QC file but missing entries, retry proc later ({})'.format(temp_file))
                         return None
@@ -565,7 +565,7 @@ def grab_required_bids_files(subject_id, requirements_dict, qc_df = None, bucket
             qc_values = []
             requirement_disqualified = 0
             if ('qc_criteria' in requirements_dict[parent_requirement]) and (type(qc_df) != type(None)):
-                partial_df = qc_df[qc_df['nifti_names'].str.contains(temp_file.split('/')[-1])]
+                partial_df = qc_df[qc_df['filename'].str.contains(temp_file.split('/')[-1])]
                 if len(partial_df) == 0:
                     is_ses_agnostic = 0
                     for temp_ses_agnostic in session_agnostic_files:
@@ -773,6 +773,99 @@ def register_cbrain_csvs_in_cbrain(file_name, cbrain_api_token, user_id = 4022, 
         print(dp_response.text)
                       
     return
+
+def download_scans_tsv_file(bucket_config, output_folder, subject, session, bids_prefix = 'assembly_bids', bucket = 'hbcd-pilot', client = None):
+    '''Download scans.tsv file for a given subject/session
+    
+    Parameters
+    ----------
+    
+    bucket_config : str
+        This will be used as a config file to identify
+        the s3 credentials
+    output_folder : str
+        Where to save the downloaded file
+    subject : str
+        Name of subject
+    session : str
+        Name of session
+    bids_prefix : str, default 'assembly_bids'
+        The path to the BIDS study directory
+    bucket : str, default 'hbcd-pilot'
+        The bucket where the file to download is
+    client : existing boto3 client, or None, default None
+        Option to use an existing boto3 client instead
+        of creating a new one
+        
+    Returns
+    -------
+    
+    Path to downloaded scans.tsv file if download was successful,
+    otherwise returns None
+        
+    '''
+
+    # Make a new s3 client if it doesn't exist   
+    if type(client) == type(None):
+        client = create_boto3_client(s3_config = bucket_config)
+
+    #Iterate through bucket to find potential subjects
+    file_to_download = os.path.join(bids_prefix, subject, session, '{}_{}_scans.tsv'.format(subject,session))
+    downloaded_file = os.path.join(output_folder, file_to_download.split('/')[-1])
+    try:
+        client.download_file(bucket, file_to_download, downloaded_file)
+    except:
+        return None
+            
+    return downloaded_file
+
+def create_boto3_client(s3_config = None):
+    '''Utility to create a boto3 client
+    
+    Parameters
+    ----------
+    
+    s3_config : str or None, default None
+        Path to s3 configuration file
+        
+    Returns
+    -------
+    
+    boto3 client
+    
+    '''
+    
+    #Grab config path
+    if s3_config == False:
+        config_path = ''
+    else:
+        if type(s3_config) != str:
+            raise NameError('Error: different config path should eithe be string or boolean')
+        else:
+            config_path = s3_config
+            
+    #Find info from config file    
+    with open(config_path, 'r') as f:
+        lines = f.read().splitlines()
+        for temp_line in lines:
+            if 'access_key' == temp_line[:10]:
+                access_key = temp_line.split('=')[-1].strip()
+            if 'secret_key' == temp_line[:10]:
+                secret_key = temp_line.split('=')[-1].strip()
+            if 'host_base' == temp_line[:9]:
+                host_base = temp_line.split('=')[-1].strip()
+                if 'https' != host_base[:5]:
+                    host_base = 'https://' + host_base
+        
+    #Create s3 client
+    client = boto3.client(
+        's3',
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key,
+        endpoint_url =host_base
+    )
+    
+    return client
 
 def cbrain_mark_as_newer(file_id, cbrain_api_token):
     '''Mark file as newer on CBRAIN
@@ -1496,7 +1589,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                         derivatives_bucket_config = '/some/path', derivatives_bucket = 'hbcd-pilot',
                         derivatives_bucket_prefix = 'derivatives', bids_data_provider_id = 710,
                         derivatives_data_provider_id = 0, session_qc_files_root_dir = None, ses_name = '',
-                        rerun_level = 1, logs_directory = None, logs_prefix = 'cbrain_misc'):
+                        rerun_level = 1, logs_directory = None, logs_prefix = 'cbrain_misc', session_dp_dict = None):
     
     '''Function to manage processing of data using CBRAIN
 
@@ -1599,6 +1692,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     #If any of the requirements are dependent on QC info, return True
     #otherwise return false and allow processing even when QC file is missing
     qc_info_required = is_qc_info_required(file_selection_dict)
+    print("QC info required: {}".format(qc_info_required))
 
     #Path to external requirements file for the given pipeline      
     external_requirements_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'external_requirements', '{}.json'.format(pipeline_name))
@@ -1651,15 +1745,15 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         #Grab the QC file for this subject so we can figure out which files can be used for processing.
         #If no QC requirements are specified in the comprehensive processing prerequisites, then the QC file will be ignored.
         if type(session_qc_files_root_dir) != type(None):
-            subj_ses_qc_file_path = os.path.join(session_qc_files_root_dir, '{}_{}.csv'.format(temp_subject, ses_name))
-            if (os.path.exists(subj_ses_qc_file_path) == False) and (qc_info_required == True):
+            subj_ses_qc_file_path = download_scans_tsv_file(bids_bucket_config, logs_directory, temp_subject, ses_name, bids_prefix = 'assembly_bids', bucket = bids_bucket, client = None)
+            if (type(subj_ses_qc_file_path) == type(None)) and (qc_info_required == True):
                 print('    Skipping Processing - No QC file found for subject')
                 continue
             else:
                 if qc_info_required == False:
                     subj_ses_qc_file = None
                 else:
-                    subj_ses_qc_file = pd.read_csv(subj_ses_qc_file_path)
+                    subj_ses_qc_file = pd.read_csv(subj_ses_qc_file_path, delimiter = '\t')
         else:
             subj_ses_qc_file = None
             
