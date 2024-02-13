@@ -1692,6 +1692,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     #If any of the requirements are dependent on QC info, return True
     #otherwise return false and allow processing even when QC file is missing
     qc_info_required = is_qc_info_required(file_selection_dict)
+    print("QC info required: {}".format(qc_info_required))
 
     #Path to external requirements file for the given pipeline      
     external_requirements_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'external_requirements', '{}.json'.format(pipeline_name))
