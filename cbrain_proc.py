@@ -1634,6 +1634,19 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     for i, temp_subject in enumerate(registered_and_s3_names):
         
         print('Evaluating: {}'.format(temp_subject))
+        
+        #Be sure that the current subject doesn't have existing output before starting processing
+        if check_if_derivatives_exist(temp_subject, pipeline_name,
+                                        bucket = derivatives_bucket, prefix = derivatives_bucket_prefix,
+                                        derivatives_bucket_config = derivatives_bucket_config):
+            print('    Already has derivatives')
+            continue
+
+        #Check what type of processing has already occured for the subject with
+        #this pipeline and only continue if processing hasn't already been initiated
+        #or under certain failure conditions (see documentation for check_rerun_status)
+        if False == check_rerun_status(registered_and_s3_ids[i], current_cbrain_tasks, derivatives_data_provider_id, tool_config_id, rerun_level = rerun_level):
+            continue #Check rerun status will print out a message to the user if processing is not going to be rerun
 
         #Grab the QC file for this subject so we can figure out which files can be used for processing.
         #If no QC requirements are specified in the comprehensive processing prerequisites, then the QC file will be ignored.
@@ -1649,19 +1662,6 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                     subj_ses_qc_file = pd.read_csv(subj_ses_qc_file_path)
         else:
             subj_ses_qc_file = None
-        
-        #Be sure that the current subject doesn't have existing output before starting processing
-        if check_if_derivatives_exist(temp_subject, pipeline_name,
-                                        bucket = derivatives_bucket, prefix = derivatives_bucket_prefix,
-                                        derivatives_bucket_config = derivatives_bucket_config):
-            print('    Already has derivatives')
-            continue
-
-        #Check what type of processing has already occured for the subject with
-        #this pipeline and only continue if processing hasn't already been initiated
-        #or under certain failure conditions (see documentation for check_rerun_status)
-        if False == check_rerun_status(registered_and_s3_ids[i], current_cbrain_tasks, derivatives_data_provider_id, tool_config_id, rerun_level = rerun_level):
-            continue #Check rerun status will print out a message to the user if processing is not going to be rerun
             
             
         #Check that the subject has requirements satisfiying at least one pipeline specific json in the processing_prerequisites folder
