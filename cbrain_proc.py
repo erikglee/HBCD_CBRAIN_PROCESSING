@@ -1748,7 +1748,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             subj_ses_qc_file_path = download_scans_tsv_file(bids_bucket_config, logs_directory, temp_subject, ses_name, bids_prefix = 'assembly_bids', bucket = bids_bucket, client = None)
             print('  QC file type: {}'.format(type(subj_ses_qc_file_path)))
             print('  qc_info_required: {}'.format(qc_info_required))
-            if (type(subj_ses_qc_file_path) == None) and (qc_info_required == True):
+            if (type(subj_ses_qc_file_path) == type(None)) and (qc_info_required == True):
                 print('    Skipping Processing - No QC file found for subject')
                 continue
             else:
