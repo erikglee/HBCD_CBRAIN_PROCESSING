@@ -1589,7 +1589,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                         derivatives_bucket_config = '/some/path', derivatives_bucket = 'hbcd-pilot',
                         derivatives_bucket_prefix = 'derivatives', bids_data_provider_id = 710,
                         derivatives_data_provider_id = 0, session_qc_files_root_dir = None, ses_name = '',
-                        rerun_level = 1, logs_directory = None, logs_prefix = 'cbrain_misc'):
+                        rerun_level = 1, logs_directory = None, logs_prefix = 'cbrain_misc', session_dp_dict = None):
     
     '''Function to manage processing of data using CBRAIN
 
