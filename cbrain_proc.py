@@ -964,7 +964,7 @@ def check_if_derivatives_exist(subject_name, pipeline_folder, bucket = 'hbcd-pil
         else:
             return False
     
-def grab_json(json_config_location, pipeline_name):
+def grab_json(json_config_location, pipeline_name, session_label = None):
     """Load json config for a given pipeline
 
     Parameters
@@ -998,6 +998,17 @@ def grab_json(json_config_location, pipeline_name):
             raise NameError('Error: expected json configuration for {} at {}'.format(pipeline_name, json_config_location))
     with open(json_config_location, 'r') as f:
         json_contents = json.load(f)
+
+    #Also if the subject specified a session for processing,
+    #load the session_arguments.json so that a session argument
+    #can be passed to the pipeline if we have one on record.
+    if type(session_label) != type(None):
+        ses_config_location = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'session_arguments.json')
+        with open(ses_config_location, 'r') as f:
+            ses_json_contents = json.load(f)
+        if pipeline_name in ses_json_contents.keys():
+            json_contents[ses_json_contents[pipeline_name]] = session_label
+            
     return json_contents
 
 
@@ -1138,9 +1149,11 @@ def submit_generic_cbrain_task(task_headers, task_params, task_data, pipeline_na
     
 
 
-def launch_task_concise_dict(pipeline_name, variable_parameters_dict, cbrain_api_token, data_provider_id = 710,
-                             override_tool_config_id = False, group_id = 10367, user_id = 4022, task_description = '',
-                             custom_json_config_location = False, all_to_keep = None):
+def launch_task_concise_dict(pipeline_name, variable_parameters_dict, cbrain_api_token,
+                             data_provider_id = 710, override_tool_config_id = False,
+                             group_id = 10367, user_id = 4022, task_description = '',
+                             custom_json_config_location = False, all_to_keep = None,
+                             session_label = None):
 
     '''Uses submit_generic_cbrain_task to launch processing
     
@@ -1205,7 +1218,9 @@ def launch_task_concise_dict(pipeline_name, variable_parameters_dict, cbrain_api
     
     #Grab the json config path and load it
     #json_contents = grab_json(custom_json_config_location, pipeline_name)
-    fixed_parameters_dict = grab_json(custom_json_config_location, pipeline_name)
+    fixed_parameters_dict = grab_json(custom_json_config_location,
+                                      pipeline_name,
+                                      session_label = session_label)
         
     #Construct different dictionaries that will be sent to CBRAIN
     task_headers, task_params, task_data = construct_generic_cbrain_task_info_dict(cbrain_api_token, group_id, user_id, tool_config_id, data_provider_id, task_description, variable_parameters_dict, fixed_parameters_dict, all_to_keep = all_to_keep)
@@ -1647,6 +1662,9 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     
     '''
 
+    if type(ses_name) == str:
+        ses_label = ses_name.split('-')[1]
+
     #Load the tool config id for the current pipeline being used for processing
     tool_config_file = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'tool_config_ids.json')
     with open(tool_config_file, 'r') as f:
@@ -1822,7 +1840,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         #Launch Processing
         status, json_for_logging = launch_task_concise_dict(pipeline_name, subject_external_requirements_list[i], cbrain_api_token, data_provider_id = derivatives_data_provider_id,
                                     group_id = group_id, user_id = user_id, task_description = ' via API',
-                                    all_to_keep = all_to_keep_lists[i])
+                                    all_to_keep = all_to_keep_lists[i], session_label = ses_label)
         json_for_logging['s3_metadata'] = metadata_dicts_list[i]
         if status == False:
             raise ValueError('Error CBRAIN processing tasked was not submitted for {}. Issue must be resolved for processing to continue.'.format(final_subjects_names_for_proc[i]))
