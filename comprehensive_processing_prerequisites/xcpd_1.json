@@ -1,0 +1,40 @@
+{
+
+    "T1" : {"file_naming" : {"T1w.nii.gz" : true,
+        "rec-undistorted" : false,
+        "acq-svslocalizer" : false,
+        "acq-mrsLoc" : false,
+        "_QALAS.nii.gz" : false},
+
+        "qc_criteria" : [{"HBCD_compliant" : true},
+                            {"QU_motion" : 1},
+                            {"aqc_motion" : 10000}],
+        "num_to_keep" : 1
+        },
+
+    "T2" : {"file_naming" : {"T2w.nii.gz" : true,
+            "rec-undistorted" : false,
+            "acq-svslocalizer" : false,
+            "acq-mrsLoc" : false,
+            "_QALAS.nii.gz" : false},
+
+            "qc_criteria" : [{"HBCD_compliant" : true},
+                                {"QU_motion" : 1},
+                                {"aqc_motion" : 10000}],
+
+            "num_to_keep" : 1
+            },
+
+    "FMRI" : {"file_naming" : {"bold.nii.gz" : true,
+            "rec-undistorted" : false, 
+            "rec-biascorrected" : false}},
+
+    "AP_FMAP" : {"file_naming" : {"epi.nii.gz" : true, 
+            "dir-AP" : true}},
+
+    "PA_FMAP" : {"file_naming" : {"epi.nii.gz" : true, 
+            "dir-PA" : true}},
+
+    "sessions" : {"file_naming" : {"sessions.tsv" : true}}
+
+}

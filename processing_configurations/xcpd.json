@@ -1,0 +1,14 @@
+{
+    "output_dir": "qwerty",
+    "derivatives_prefix": "",
+    "input_type": "nibabies",
+    "cifti": "true",
+    "despike": "true",
+    "dcan_qc": "true",
+    "warp_surfaces": "true",
+    "fd_thresh": 0.3,
+    "head_radius": "auto",
+    "combineruns": "true",
+    "verbose": "true"
+
+}

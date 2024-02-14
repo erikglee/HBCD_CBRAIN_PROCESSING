@@ -1,3 +1,4 @@
 {
+    "subject_dir" : "BidsSubject",
     "preproc_fmri_dir" : "NibabiesOutput"
 }
