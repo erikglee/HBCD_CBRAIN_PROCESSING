@@ -1,4 +1,5 @@
 {
     "subject_dir" : "BidsSubject",
-    "preproc_fmri_dir" : "NibabiesOutput"
+    "preproc_fmri_dir" : "NibabiesOutput",
+    "preproc_output_json" : "5057198"
 }
