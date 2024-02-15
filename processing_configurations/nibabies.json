@@ -3,5 +3,6 @@
     "derivatives_prefix": "",
     "surface_recon_method": "mcribs",
     "project_goodvoxels": "true",
-    "cifti_output": "91k"
+    "cifti_output": "91k",
+    "output_spaces": "MNI152NLin6Asym:res-2"
 }
