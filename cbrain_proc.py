@@ -1548,7 +1548,10 @@ def check_rerun_status(cbrain_subject_id, cbrain_tasks, derivatives_data_provide
         
     Returns
     -------
-    True if processing is recommended, else False
+    -True if processing is recommended, else False
+    -Example status from the tasks that were found. Prioritizes statuses
+    from rerun_group_2. Also gives custom status of "No Tasks Found" if
+    no associated tasks exist.
     
     
     '''
@@ -1571,31 +1574,36 @@ def check_rerun_status(cbrain_subject_id, cbrain_tasks, derivatives_data_provide
 
     num_rerun_group_1 = 0
     num_rerun_group_2 = 0
+    example_status = None
     for temp_status in task_statuses:
         if temp_status in rerun_group_1:
             num_rerun_group_1 += 1
+            example_status = temp_status
         if temp_status in rerun_group_2:
             num_rerun_group_2 += 1
+            if type(example_status) == type(None):
+                example_status = temp_status
 
     if len(task_statuses) == 0:
-        return True
+        example_status = 'No Tasks Found'
+        return True, example_status
     else:
         if rerun_level == 0:
             print('    Found existing task(s), consider deleting the task(s) or using higher rerun level. Tasks: {}, Statuses: {}'.format(task_ids, task_statuses))
         elif rerun_level == 1:
             if len(task_statuses) == num_rerun_group_1:
-                return True
+                return True, example_status
             else:
                 print('    Found existing task(s) with status within rerun_level = 1, consider deleting the task(s) or using higher rerun level. Tasks: {}, Statuses {}'.format(task_ids, task_statuses))
         elif rerun_level == 2:
             if len(task_statuses) == (num_rerun_group_1 + num_rerun_group_2):
-                return True
+                return True, example_status
             else:
                 print('    Found existing task(s) with status within rerun_level = 2, consider deleting the task(s) or using higher rerun level. Tasks: {}, Statuses {}'.format(task_ids, task_statuses))
         else:
             raise ValueError('Error: rerun_level must be 0, 1, or 2')
 
-    return False
+    return False, example_status
 
 
 def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_ids, cbrain_api_token,
@@ -1737,6 +1745,9 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     derivs_data_provider_files = find_cbrain_files_on_dp(cbrain_api_token, data_provider_id = derivatives_data_provider_id)
     ########################################################################################
     
+    #A list to store details about why some subjects were processed
+    #and others were not
+    study_processing_details = []
     
     subject_external_requirements_list = []
     all_to_keep_lists = [] #list of lists of files to keep for each subject
@@ -1744,20 +1755,32 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     final_subjects_names_for_proc = [] #list of subjects that fullfill requirements for processing
     metadata_dicts_list = [] #list for keeping track of s3 file identifiers
     for i, temp_subject in enumerate(registered_and_s3_names):
-        
         print('Evaluating: {}'.format(temp_subject))
+        
+        #A dictionary to store details that will later be used to populate
+        #a spreadsheet that will be used to track processing across subjects
+        subject_processing_details = {}
+        subject_processing_details['subject'] = temp_subject
+        subject_processing_details['pipeline'] = pipeline_name
+        subject_processing_details['session'] = ses_name
+        subject_processing_details['derivatives_found'] = False
+        subject_processing_details['CBRAIN_Status'] = "N/A"
+        subject_processing_details['scans_tsv_present'] = False
         
         #Be sure that the current subject doesn't have existing output before starting processing
         if check_if_derivatives_exist(temp_subject, pipeline_name,
                                         bucket = derivatives_bucket, prefix = derivatives_bucket_prefix,
                                         derivatives_bucket_config = derivatives_bucket_config):
+            subject_processing_details['derivatives_found'] = True
             print('    Already has derivatives')
             continue
 
         #Check what type of processing has already occured for the subject with
         #this pipeline and only continue if processing hasn't already been initiated
         #or under certain failure conditions (see documentation for check_rerun_status)
-        if False == check_rerun_status(registered_and_s3_ids[i], current_cbrain_tasks, derivatives_data_provider_id, tool_config_id, rerun_level = rerun_level):
+        to_rerun, example_status = check_rerun_status(registered_and_s3_ids[i], current_cbrain_tasks, derivatives_data_provider_id, tool_config_id, rerun_level = rerun_level)
+        subject_processing_details['CBRAIN_Status'] = example_status
+        if False == to_rerun:
             continue #Check rerun status will print out a message to the user if processing is not going to be rerun
 
         #Grab the QC file for this subject so we can figure out which files can be used for processing.
@@ -1768,6 +1791,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                 print('    Skipping Processing - No QC file found for subject')
                 continue
             else:
+                subject_processing_details['scans_tsv_present'] = True
                 if qc_info_required == False:
                     subj_ses_qc_file = None
                 else:
