@@ -1924,7 +1924,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         log_csv_name = os.path.join(logs_directory, 'processing_details_{}_{}.csv'.format(pipeline_name, ses_label))
         study_tracking_df.to_csv(log_csv_name, index = False)
         log_html_name = os.path.join(logs_directory, 'processing_details_{}_{}.html'.format(pipeline_name, ses_label))
-        html = study_tracking_df.to_html(log_html_name, index = False)
+        html = study_tracking_df.to_html(index = False)
         with open(log_html_name, 'w') as f:
             f.write(html)
 
