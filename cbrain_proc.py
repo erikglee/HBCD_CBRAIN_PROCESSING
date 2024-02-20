@@ -323,6 +323,15 @@ def check_bids_requirements(subject_id, requirements_dict, qc_df = None, bucket 
         otherwise False
         
     '''
+
+    # Create a dictionary that will store information about the
+    # different processing requirements. This is not actually
+    # used for processing, but will be used to build a spreadsheet
+    # that describes which subjects were/werent processed.
+    requirements_tracking_dict = {}
+    for temp_req in requirements_dict.keys():
+        requirements_tracking_dict[temp_req] = 'No File'
+
     
     # Do some cosmetics so that the prefix includes the pipeline
     # name and so that later we look for the subject ID at the
@@ -346,6 +355,7 @@ def check_bids_requirements(subject_id, requirements_dict, qc_df = None, bucket 
 
     parent_requirements_satisfied = 0
     for parent_requirement in requirements_dict.keys():
+        temp_tracking_status = 'No File'
         child_requirements = requirements_dict[parent_requirement]
         for temp_file in subject_files:
             child_requirements_satisfied = 0
@@ -380,6 +390,9 @@ def check_bids_requirements(subject_id, requirements_dict, qc_df = None, bucket 
                     partial_df = qc_df[qc_df['filename'].str.contains(temp_file.split('/')[-1])]
                     if len(partial_df) == 0:
                         print('    Warning: Subject has QC file but missing entries, retry proc later ({})'.format(temp_file))
+                        if temp_tracking_status == 'No File': #This wont overwrite the status when requirements are satisfied
+                            temp_tracking_status = 'No QC'
+
                         return None
                     
                     #Iterate through each QC requirement (the requirements are
@@ -407,6 +420,8 @@ def check_bids_requirements(subject_id, requirements_dict, qc_df = None, bucket 
                                         #print(partial_df[temp_key].values[0])
                                         #print(temp_qc_criteria[temp_key])
                                         #print('{}: {}'.format(temp_key, partial_df[temp_key].values[0]))
+                                        if (temp_tracking_status == 'No File') or (temp_tracking_status == 'No QC'):
+                                            temp_tracking_status = 'Failed QC'
                                         requirement_disqualified = 1
                                         
                             #Otherwise assume the requirement is a number, and
@@ -414,19 +429,23 @@ def check_bids_requirements(subject_id, requirements_dict, qc_df = None, bucket 
                             else:
                                 if (partial_df[temp_key].values[0] > temp_qc_criteria[temp_key]) or np.isnan(partial_df[temp_key].values[0]):
                                     #print('{}: {}'.format(temp_key, partial_df[temp_key].values[0]))
+                                    if (temp_tracking_status == 'No File') or (temp_tracking_status == 'No QC'):
+                                        temp_tracking_status = 'Failed QC'
                                     requirement_disqualified = 1
                              
                 #print('Requirement Disqualified Status: {}\n'.format(requirement_disqualified))
                 if requirement_disqualified == 0:
                     parent_requirements_satisfied += 1
+                    temp_tracking_status = 'Satisfied'
+                requirements_tracking_dict[parent_requirement] = temp_tracking_status
                 break
     
     #If all requirements have been satisfied at least once return true, else false
     if parent_requirements_satisfied == len(requirements_dict.keys()):
         #print(len(requirements_dict.keys()))
-        return True
+        return True, requirements_tracking_dict
     else:
-        return False
+        return False, requirements_tracking_dict
     
     
 def grab_required_bids_files(subject_id, requirements_dict, qc_df = None, bucket = 'hbcd-pilot', prefix = 'assembly_bids', 
@@ -1424,6 +1443,11 @@ def grab_external_requirements(subject_name, cbrain_files,
     
     
     '''
+
+    #First create this dictionary that will be used to track why certain
+    #subjects are processed and others arent processed. Used only for tracking,
+    #not for determining who is processed.
+    requirements_tracking_dict = {}
     
     subject_external_requirements = {}
     for temp_requirement in requirements_dict.keys():
@@ -1452,10 +1476,12 @@ def grab_external_requirements(subject_name, cbrain_files,
                             continue
                     requirement_found = True
                     subject_external_requirements[temp_requirement] = temp_file['id']
+                    requirements_tracking_dict[temp_requirement] = 'Satisfied'
                     break
             if requirement_found == False:
-                return None
-    return subject_external_requirements
+                requirements_tracking_dict[temp_requirement] = 'No File'
+                return None, requirements_tracking_dict
+    return subject_external_requirements, requirements_tracking_dict
 
 def find_potential_subjects_for_processing(cbrain_api_token, bids_bucket_config, bids_bucket = 'hbcd-pilot',
                                            bids_prefix = 'assembly_bids', data_provider_id = '710'):
@@ -1759,6 +1785,12 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         
         #A dictionary to store details that will later be used to populate
         #a spreadsheet that will be used to track processing across subjects
+        if type(subject_processing_details) == type(None):
+            pass
+        else:
+            study_processing_details.append(subject_processing_details)
+
+
         subject_processing_details = {}
         subject_processing_details['subject'] = temp_subject
         subject_processing_details['pipeline'] = pipeline_name
@@ -1798,13 +1830,23 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                     subj_ses_qc_file = pd.read_csv(subj_ses_qc_file_path, delimiter = '\t')
         else:
             subj_ses_qc_file = None
-            
+
+
+        #First run preliminary check for requirements that is only used
+        #for the purpose of populating the processing details spreadsheet.
+        #Later requirements check will actually be used to determine if 
+        #processing will be attempted.
+        temp_req_output, req_tracking_dict = check_bids_requirements(temp_subject, file_selection_dict,
+                                                    bucket = bids_bucket, prefix = bids_bucket_prefix,
+                                                    bids_bucket_config = bids_bucket_config,
+                                                    session = ses_name, qc_df = subj_ses_qc_file)
+        subject_processing_details.update(req_tracking_dict)
             
         #Check that the subject has requirements satisfiying at least one pipeline specific json in the processing_prerequisites folder
         requirements_satisfied = 0
         none_found = 0
         for temp_requirement in requirements_dicts:
-            temp_req_output = check_bids_requirements(temp_subject, temp_requirement,
+            temp_req_output, _ = check_bids_requirements(temp_subject, temp_requirement,
                                                                 bucket = bids_bucket, prefix = bids_bucket_prefix,
                                                                 bids_bucket_config = bids_bucket_config,
                                                                 session = ses_name, qc_df = subj_ses_qc_file)
@@ -1822,9 +1864,10 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         #Check that the external requirements are satisfied for the subject (these are pipeline inputs that will be files/file collections
         #that should already be available for the subject on CBRAIN if the subject is ready for processing). Note that
         #the files being passed to this function are already specific to a single data provider.
-        subject_external_requirements = grab_external_requirements(temp_subject, bids_data_provider_files + derivs_data_provider_files,
+        subject_external_requirements, req_tracking_dict = grab_external_requirements(temp_subject, bids_data_provider_files + derivs_data_provider_files,
                                                                     external_requirements_dict, bids_data_provider_id = bids_data_provider_id,
                                                                     derivatives_data_provider_id = derivatives_data_provider_id) #implement function for this...
+        subject_processing_details.update(req_tracking_dict)
         if subject_external_requirements is None:
             print('    Missing external requirements')
             continue #skip processing if external requirements aren't found
@@ -1876,4 +1919,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                 #derivatives_bucket_prefix
                 upload_processing_config_log(log_file_name, bucket = derivatives_bucket, prefix = os.path.join(derivatives_bucket_prefix, logs_prefix), bucket_config = derivatives_bucket_config)
 
-    return
+    
+    study_tracking_df = pd.DataFrame.from_dict(study_processing_details)
+    
+    return study_tracking_df
