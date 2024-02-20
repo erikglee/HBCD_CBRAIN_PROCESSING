@@ -1480,14 +1480,9 @@ def grab_external_requirements(subject_name, cbrain_files,
                     break
             if requirement_found == False:
                 requirements_tracking_dict[temp_requirement] = 'No File'
-                for temp_key in requirements_tracking_dict.keys():
-                    requirements_tracking_dict['CBRAIN_' + temp_key] = requirements_dict[temp_key]
-                    del requirements_tracking_dict[temp_key]
                 print('Requirement {} not found for subject {}'.format(temp_key, subject_name))
                 return None, requirements_tracking_dict
-    for temp_key in requirements_tracking_dict.keys():
-        requirements_tracking_dict['CBRAIN_' + temp_key] = requirements_dict[temp_key]
-        del requirements_tracking_dict[temp_key]
+
     return subject_external_requirements, requirements_tracking_dict
 
 def find_potential_subjects_for_processing(cbrain_api_token, bids_bucket_config, bids_bucket = 'hbcd-pilot',
@@ -1872,7 +1867,12 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         subject_external_requirements, req_tracking_dict = grab_external_requirements(temp_subject, bids_data_provider_files + derivs_data_provider_files,
                                                                     external_requirements_dict, bids_data_provider_id = bids_data_provider_id,
                                                                     derivatives_data_provider_id = derivatives_data_provider_id) #implement function for this...
-        subject_processing_details.update(req_tracking_dict)
+        
+        #Update tracking dict based on grab_external_requirements results
+        for temp_key in req_tracking_dict.keys():
+            subject_processing_details['CBRAIN_' + temp_key] = req_tracking_dict[temp_key]
+        
+        #Skip processing for subject if external requirements aren't found
         if subject_external_requirements is None:
             print('    Missing external requirements')
             continue #skip processing if external requirements aren't found
