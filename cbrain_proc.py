@@ -1480,7 +1480,7 @@ def grab_external_requirements(subject_name, cbrain_files,
                     break
             if requirement_found == False:
                 requirements_tracking_dict[temp_requirement] = 'No File'
-                print('Requirement {} not found for subject {}'.format(temp_key, subject_name))
+                print('Requirement {} not found for subject {}'.format(temp_requirement, subject_name))
                 return None, requirements_tracking_dict
 
     return subject_external_requirements, requirements_tracking_dict
