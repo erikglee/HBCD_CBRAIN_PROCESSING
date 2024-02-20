@@ -393,6 +393,9 @@ def check_bids_requirements(subject_id, requirements_dict, qc_df = None, bucket 
                         if temp_tracking_status == 'No File': #This wont overwrite the status when requirements are satisfied
                             temp_tracking_status = 'No QC'
 
+                        #Should there be a dry run option here where we dont
+                        #return if we are just running this function to create
+                        #the tracking log
                         return None, requirements_tracking_dict
                     
                     #Iterate through each QC requirement (the requirements are
