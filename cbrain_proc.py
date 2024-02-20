@@ -1785,9 +1785,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         
         #A dictionary to store details that will later be used to populate
         #a spreadsheet that will be used to track processing across subjects
-        if type(subject_processing_details) == type(None):
-            pass
-        else:
+        if 'subject_processing_details' in locals():
             study_processing_details.append(subject_processing_details)
 
 
