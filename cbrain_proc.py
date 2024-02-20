@@ -1883,6 +1883,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         final_subjects_ids_for_proc.append(registered_and_s3_ids[i])
         final_subjects_names_for_proc.append(temp_subject)
         print('    Processing will be attempted')
+        subject_processing_details['CBRAIN_Status'] = 'Initiating Processing'
 
         #print('all_to_keep {}'.format(all_to_keep_lists))
         #print('subject_external_req {}'.format(subject_external_requirements_list))
@@ -1919,5 +1920,13 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
 
     
     study_tracking_df = pd.DataFrame.from_dict(study_processing_details)
+    if type(logs_directory) != type(None):
+        log_csv_name = os.path.join(logs_directory, 'processing_details_{}_{}.csv'.format(pipeline_name, ses_label))
+        study_tracking_df.to_csv(log_csv_name, index = False)
+        log_html_name = os.path.join(logs_directory, 'processing_details_{}_{}.html'.format(pipeline_name, ses_label))
+        html = study_tracking_df.to_html(log_html_name, index = False)
+        with open(log_html_name, 'w') as f:
+            f.write(html)
+
     
     return study_tracking_df
