@@ -1611,6 +1611,8 @@ def check_rerun_status(cbrain_subject_id, cbrain_tasks, derivatives_data_provide
             num_rerun_group_2 += 1
             if type(example_status) == type(None):
                 example_status = temp_status
+        if type(example_status) == type(None):
+            example_status = temp_status
 
     if len(task_statuses) == 0:
         example_status = 'No Tasks Found'
