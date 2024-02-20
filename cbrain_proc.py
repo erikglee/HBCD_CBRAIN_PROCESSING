@@ -393,7 +393,7 @@ def check_bids_requirements(subject_id, requirements_dict, qc_df = None, bucket 
                         if temp_tracking_status == 'No File': #This wont overwrite the status when requirements are satisfied
                             temp_tracking_status = 'No QC'
 
-                        return None
+                        return None, requirements_tracking_dict
                     
                     #Iterate through each QC requirement (the requirements are
                     #stored as a list of dictionaries, each with one key/value pair)
