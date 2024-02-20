@@ -1480,7 +1480,14 @@ def grab_external_requirements(subject_name, cbrain_files,
                     break
             if requirement_found == False:
                 requirements_tracking_dict[temp_requirement] = 'No File'
+                for temp_key in requirements_tracking_dict.keys():
+                    requirements_tracking_dict['CBRAIN_' + temp_key] = requirements_dict[temp_key]
+                    del requirements_tracking_dict[temp_key]
+                print('Requirement {} not found for subject {}'.format(temp_key, subject_name))
                 return None, requirements_tracking_dict
+    for temp_key in requirements_tracking_dict.keys():
+        requirements_tracking_dict['CBRAIN_' + temp_key] = requirements_dict[temp_key]
+        del requirements_tracking_dict[temp_key]
     return subject_external_requirements, requirements_tracking_dict
 
 def find_potential_subjects_for_processing(cbrain_api_token, bids_bucket_config, bids_bucket = 'hbcd-pilot',
