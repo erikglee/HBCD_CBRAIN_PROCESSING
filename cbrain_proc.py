@@ -1932,6 +1932,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
 
     
     study_tracking_df = pd.DataFrame.from_dict(study_processing_details)
+    study_tracking_df.fillna('Not Evaluated', inplace=True)
     if type(logs_directory) != type(None):
         log_csv_name = os.path.join(logs_directory, 'processing_details_{}_{}.csv'.format(pipeline_name, ses_label))
         study_tracking_df.to_csv(log_csv_name, index = False)

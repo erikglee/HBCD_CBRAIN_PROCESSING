@@ -3,5 +3,6 @@
     "preproc_fmri_dir" : "NibabiesOutput",
     "freesurfer_dir" : "NibabiesFreesurferOutput",
     "mcribs_dir" : "McribsOutput",
-    "preproc_output_json" : "5057198"
+    "preproc_output_json" : "5057198",
+    "templates_fslr_dir" : "5080463"
 }
