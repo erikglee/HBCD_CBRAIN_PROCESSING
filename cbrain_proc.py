@@ -1638,6 +1638,153 @@ def check_rerun_status(cbrain_subject_id, cbrain_tasks, derivatives_data_provide
 
     return False, example_status
 
+def color_specific_value_cells(styler, column_name, value="specific_value", color="red"):
+    """
+    Takes a DataFrame Styler, a column name, a value to match, and a color.
+    Returns the Styler with cells in the specified column colored based on the condition.
+
+    Parameters:
+    - styler: pandas.io.formats.style.Styler, the styler object of the DataFrame.
+    - column_name: str, the name of the column to apply the color condition.
+    - value: str, the value to check for in the column.
+    - color: str, the CSS color to apply to matching cells.
+
+    Returns:
+    - pandas.io.formats.style.Styler, the updated styler object.
+    """
+    def apply_color(s):
+        # Returns a Series of styles for the column; use '' for cells that do not meet the condition
+        return ['background-color: {}'.format(color) if cell == value else '' for cell in s]
+    
+    return styler.apply(apply_color, subset=[column_name])
+
+
+def add_title_and_list_to_html_content(html_content, title, list_of_strings):
+    """
+    Modifies HTML content to include a title and a series of bullet points.
+
+    Parameters:
+    - html_content: str, the HTML content as a string.
+    - title: str, the title to be added to the HTML.
+    - list_of_strings: list, a list of strings to be converted into bullet points.
+
+    Returns:
+    - str, the modified HTML content with added title and bullet points.
+    """
+    # Create the title and bullet points HTML
+    title_html = f'<h1>{title}</h1>\n'
+    list_html = '<ul>\n' + ''.join([f'<li>{item}</li>\n' for item in list_of_strings]) + '</ul>\n'
+    
+    # Insert the title and list HTML before the table
+    # Assuming the first occurrence of <table relates to the DataFrame's table
+    table_index = html_content.find('<table')
+    if table_index == -1:
+        # If no table is found, prepend the title and list to the HTML content
+        modified_html = title_html + list_html + html_content
+    else:
+        modified_html = html_content[:table_index] + title_html + list_html + html_content[table_index:]
+    
+    return modified_html
+
+
+def add_prettier_background_to_html(html_content):
+    """
+    Modifies the given HTML content to include prettier background formatting using CSS.
+
+    Parameters:
+    - html_content: str, the HTML content as a string.
+
+    Returns:
+    - str, the modified HTML content with additional CSS for prettier formatting.
+    """
+    # Define the CSS for prettier background and overall formatting
+    css_styles = """
+    <style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f0f0f0;
+        margin: 20px;
+        padding: 20px;
+    }
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+    th, td {
+        text-align: left;
+        padding: 8px;
+    }
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
+    th {
+        background-color: #4CAF50;
+        color: white;
+    }
+    h1 {
+        color: #333;
+    }
+    ul {
+        list-style-type: square;
+    }
+    li {
+        margin-bottom: 5px;
+    }
+    </style>
+    """
+
+    # Insert the CSS at the beginning of the HTML content
+    html_with_css = css_styles + html_content
+
+    return html_with_css
+
+def reformat_df_and_produce_proc_html(study_tracking_df, pipeline_name, ses_label, output_html_path, file_selection_dict):
+    
+    study_tracking_df.fillna('Not Evaluated', inplace=True)
+    study_tracking_df.loc[study_tracking_df["scans_tsv_present"] == 1, "scans_tsv_present"] = 'True'
+    study_tracking_df.loc[study_tracking_df["scans_tsv_present"] == 0, "scans_tsv_present"] = 'False'
+    study_tracking_df.loc[study_tracking_df["derivatives_found"] == 1, "derivatives_found"] = 'True'
+    study_tracking_df.loc[study_tracking_df["derivatives_found"] == 0, "derivatives_found"] = 'False'
+    styler = study_tracking_df.style
+    for temp_key in file_selection_dict.keys():
+        styler = color_specific_value_cells(styler, temp_key, 'Satisfied', color='Green')
+        styler = color_specific_value_cells(styler, temp_key, 'Failed QC', color='Red')
+        styler = color_specific_value_cells(styler, temp_key, 'No File', color='Yellow')
+
+
+    for temp_col in study_tracking_df.columns:
+        styler = color_specific_value_cells(styler, temp_col, 'Not Evaluated', color='Grey')
+        if temp_col.startswith('CBRAIN_'):
+            styler = color_specific_value_cells(styler, temp_col, 'Satisfied', color='Green')
+            styler = color_specific_value_cells(styler, temp_col, 'No File', color='Red')
+
+
+    styler = color_specific_value_cells(styler, 'scans_tsv_present', 'True', color='Green')
+    styler = color_specific_value_cells(styler, 'scans_tsv_present', 'False', color='Red')
+
+    red_cbrain_statuses = ['Terminated', 'Failed To Setup', 'Failed To PostProcess', 'Failed Setup Prerequisites', 'Failed PostProcess Prerequisites', 'Suspended', 'Failed', 'Failed On Cluster']
+    for temp_status in red_cbrain_statuses:
+        styler = color_specific_value_cells(styler, 'CBRAIN_Status', temp_status, color='Red')
+    styler = color_specific_value_cells(styler, 'CBRAIN_Status', 'Completed', color='Red')
+
+
+
+    html = styler.to_html(index = False)
+    title = "Summary for HBCD session {} {} processing".format(ses_label, pipeline_name)
+    text_list = []
+    text_list.append("The color coding for the subject label is a quick presentation of a subject's processing. Green indicates processing has been completed. Yellow indicates that processing wasn't attempted because some prerequisite file was missing. Red indicates failed attempts at processing.")
+    text_list.append("It is important to remember that a failed processing task can be due to a variety of reasons including actual issues with how the pipeline is interacting with the imaging data, or data-agnostic issues within CBRAIN or MSI.")
+    text_list.append('"Not Evaluated" entries occur when we identify soemthing in the processing routine that prevents processing from being attempted. This includes (1) previous attempts at processing, (2) missing scans.tsv file, (3) failure to have reqiured BIDS files of sufficient quality in one or more categories of imaging modalities, (4) missing prerequisite outputs from another pipeline.')
+    text_list.append('Any columns beginning with "CBRAIN_" represent file collections in CBRAIN that are expected for the current processing pipeline. These columns generally represent the outputs from previous processing pipelines that will be fed to the current pipeline for processing. If a value of "No File" is observed, this either means processing with the other pipeline was not attempted or unsuccessful.')
+    text_list.append('There are certain cases where a subject has specific file types that are missing or failing QC but processing still occurred for the subject. This is because there are multiple sets of criteria that are used to determine whether a subject should be processed. For example if a subject has a good T1w and T2w image then both will be included for processing, but processing will still occur if only a good T2w image is available for processing. For a subject to be processed, they must have all the files needed to satisfy at least one of the requirements files for the given pipeline defined at https://github.com/erikglee/HBCD_CBRAIN_PROCESSING/tree/qc_aware_proc/comprehensive_processing_prerequisites . If at least one requirement is satisfied then as many files as possible (up to the limits defined by the "num_to_keep" field) will be included in processing.')
+    #text_list.append()
+    html = add_title_and_list_to_html_content(html, title, text_list)
+    html = add_prettier_background_to_html(html)
+    with open(output_html_path, 'w') as f:
+        f.write(html)
+        
+    return study_tracking_df
+
 
 def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_ids, cbrain_api_token,
                         group_id = '10367', user_id = '4022', bids_bucket_config = '/some/path',
@@ -1932,14 +2079,12 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
 
     
     study_tracking_df = pd.DataFrame.from_dict(study_processing_details)
-    study_tracking_df.fillna('Not Evaluated', inplace=True)
+    #study_tracking_df.fillna('Not Evaluated', inplace=True)
     if type(logs_directory) != type(None):
         log_csv_name = os.path.join(logs_directory, 'processing_details_{}_{}.csv'.format(pipeline_name, ses_label))
-        study_tracking_df.to_csv(log_csv_name, index = False)
         log_html_name = os.path.join(logs_directory, 'processing_details_{}_{}.html'.format(pipeline_name, ses_label))
-        html = study_tracking_df.to_html(index = False)
-        with open(log_html_name, 'w') as f:
-            f.write(html)
+        study_tracking_df = reformat_df_and_produce_proc_html(study_tracking_df, pipeline_name, ses_label, log_html_name, file_selection_dict)
+        study_tracking_df.to_csv(log_csv_name, index = False)
 
     
     return study_tracking_df
