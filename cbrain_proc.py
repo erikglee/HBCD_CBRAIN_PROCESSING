@@ -1947,9 +1947,9 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         subject_processing_details['subject'] = temp_subject
         subject_processing_details['pipeline'] = pipeline_name
         subject_processing_details['session'] = ses_name
-        subject_processing_details['derivatives_found'] = False
-        subject_processing_details['CBRAIN_Status'] = "N/A"
-        subject_processing_details['scans_tsv_present'] = False
+        subject_processing_details['derivatives_found'] = "Not Evaluated"
+        subject_processing_details['CBRAIN_Status'] = "Not Evaluated"
+        subject_processing_details['scans_tsv_present'] = "Not Evaluated"
         
         #Be sure that the current subject doesn't have existing output before starting processing
         if check_if_derivatives_exist(temp_subject, pipeline_name,
