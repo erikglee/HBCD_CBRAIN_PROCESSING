@@ -4,5 +4,6 @@
     "freesurfer_dir" : "NibabiesFreesurferOutput",
     "mcribs_dir" : "McribsOutput",
     "preproc_output_json" : "5057198",
-    "templates_fslr_dir" : "5080463"
+    "templates_fslr_dir" : "5080463",
+    "fs_license_file" : "4323067"
 }
