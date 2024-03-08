@@ -2011,6 +2011,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             
         if (requirements_satisfied == 0) or (none_found == 1):
             print('    Requirements not satisfied')
+            subject_processing_details['derivatives_found'] = "No (Missing BIDS Reqs)"
             continue
             
         #Check that the external requirements are satisfied for the subject (these are pipeline inputs that will be files/file collections
@@ -2027,6 +2028,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         #Skip processing for subject if external requirements aren't found
         if subject_external_requirements is None:
             print('    Missing external requirements')
+            subject_processing_details['derivatives_found'] = "No (Missing Derived Reqs)"
             continue #skip processing if external requirements aren't found
             
         #Grab files for the subject according to pipeline specific jsons in processing_file_numbers and processing_file_selection folders
@@ -2048,6 +2050,11 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         #print('subject_external_req {}'.format(subject_external_requirements_list))
         #print('subject_ids {}'.format(final_subjects_ids_for_proc))
         #print('subject_names {}'.format(final_subjects_names_for_proc))
+
+    #Update the study processing details dict for the last subject
+    if 'subject_processing_details' in locals():
+        study_processing_details.append(subject_processing_details)
+    
        
     #################################################################################################
     #################################################################################################
