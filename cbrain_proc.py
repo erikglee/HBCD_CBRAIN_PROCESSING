@@ -2036,6 +2036,11 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                                         bucket = derivatives_bucket, prefix = derivatives_bucket_prefix,
                                         derivatives_bucket_config = derivatives_bucket_config):
             subject_processing_details['derivatives_found'] = True
+            for temp_req in file_selection_dict.keys():
+                subject_processing_details[temp_req] = 'Already Processed'
+            for temp_req in external_requirements_dict.keys():
+                subject_processing_details['CBRAIN_' + temp_req] = 'Already Processed'
+
             print('    Already has derivatives')
             continue
         else:
