@@ -1860,7 +1860,7 @@ def reformat_df_and_produce_proc_html(study_tracking_df, pipeline_name, ses_labe
     
     
     html = add_prettier_background_to_html(html)
-    with open(log_html_name, 'w') as f:
+    with open(output_html_path, 'w') as f:
         f.write(html)
         
     return study_tracking_df
