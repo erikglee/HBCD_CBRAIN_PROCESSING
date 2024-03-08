@@ -1958,6 +1958,8 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             subject_processing_details['derivatives_found'] = True
             print('    Already has derivatives')
             continue
+        else:
+            subject_processing_details['derivatives_found'] = False
 
         #Check what type of processing has already occured for the subject with
         #this pipeline and only continue if processing hasn't already been initiated
