@@ -1743,8 +1743,8 @@ def reformat_df_and_produce_proc_html(study_tracking_df, pipeline_name, ses_labe
     study_tracking_df.fillna('Not Evaluated', inplace=True)
     study_tracking_df.loc[study_tracking_df["scans_tsv_present"] == 1, "scans_tsv_present"] = 'True'
     study_tracking_df.loc[study_tracking_df["scans_tsv_present"] == 0, "scans_tsv_present"] = 'False'
-    study_tracking_df.loc[study_tracking_df["derivatives_found"] == 1, "derivatives_found"] = 'True'
-    study_tracking_df.loc[study_tracking_df["derivatives_found"] == 0, "derivatives_found"] = 'False'
+    #study_tracking_df.loc[study_tracking_df["derivatives_found"] == 1, "derivatives_found"] = 'True'
+    #study_tracking_df.loc[study_tracking_df["derivatives_found"] == 0, "derivatives_found"] = 'False'
     styler = study_tracking_df.style
     for temp_key in file_selection_dict.keys():
         styler = color_specific_value_cells(styler, temp_key, 'Satisfied', color='Green')
