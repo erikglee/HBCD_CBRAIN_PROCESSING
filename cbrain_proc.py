@@ -1641,25 +1641,41 @@ def check_rerun_status(cbrain_subject_id, cbrain_tasks, derivatives_data_provide
 
     return False, example_status
 
-def color_specific_value_cells(styler, column_name, value="specific_value", color="red"):
+def color_specific_value_cells(styler, df, primary_column, value="specific_value", color="red", secondary_column=None):
     """
-    Takes a DataFrame Styler, a column name, a value to match, and a color.
-    Returns the Styler with cells in the specified column colored based on the condition.
+    Applies color to cells in the secondary column of a Styler object based on conditions met in the primary column
+    of the provided DataFrame. If no secondary column is specified, applies coloring to the primary column.
 
     Parameters:
-    - styler: pandas.io.formats.style.Styler, the styler object of the DataFrame.
-    - column_name: str, the name of the column to apply the color condition.
-    - value: str, the value to check for in the column.
-    - color: str, the CSS color to apply to matching cells.
+    - styler: pandas.io.formats.style.Styler, the Styler object of the DataFrame to apply styles to.
+    - df: pandas.DataFrame, the DataFrame used to determine the styling conditions.
+    - primary_column: str, the name of the primary column to check the condition against.
+    - value: str, the value to check for in the primary column.
+    - color: str, the CSS color to apply to cells in the secondary column based on the primary column's condition.
+    - secondary_column: str, optional, the name of a secondary column where the color is applied based on the primary column's condition.
 
     Returns:
-    - pandas.io.formats.style.Styler, the updated styler object.
+    - pandas.io.formats.style.Styler, the updated Styler object with applied styles.
     """
-    def apply_color(s):
-        # Returns a Series of styles for the column; use '' for cells that do not meet the condition
-        return ['background-color: {}'.format(color) if cell == value else '' for cell in s]
+    # Create a mask based on the condition in the primary column
+    mask = df[primary_column] == value
+
+    # Define the function to apply styles
+    def apply_styles(row):
+        if row.name in df.index:
+            primary_condition = mask.iloc[row.name]
+            colors = [''] * len(row)  # Initialize with no coloring
+            if primary_condition:
+                if secondary_column:  # Apply color to the secondary column based on primary condition
+                    colors[df.columns.get_loc(secondary_column)] = f'background-color: {color}'
+                else:  # Or apply to the primary column if no secondary is specified
+                    colors[df.columns.get_loc(primary_column)] = f'background-color: {color}'
+        return colors
+
+    # Apply the function across the DataFrame, row-wise
+    updated_styler = styler.apply(apply_styles, axis=1)
     
-    return styler.apply(apply_color, subset=[column_name])
+    return updated_styler
 
 
 def add_title_and_list_to_html_content(html_content, title, list_of_strings):
