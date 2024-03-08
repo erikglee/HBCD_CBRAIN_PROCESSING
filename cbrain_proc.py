@@ -2061,6 +2061,10 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             if (type(subj_ses_qc_file_path) == type(None)) and (qc_info_required == True):
                 print('    Skipping Processing - No QC file found for subject')
                 subject_processing_details['scans_tsv_present'] = False
+                for temp_req in file_selection_dict.keys():
+                    subject_processing_details[temp_req] = 'Missing QC'
+                for temp_req in external_requirements_dict.keys():
+                    subject_processing_details['CBRAIN_' + temp_req] = 'Missing QC'
                 continue
             else:
                 subject_processing_details['scans_tsv_present'] = True
