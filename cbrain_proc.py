@@ -2062,9 +2062,9 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                 print('    Skipping Processing - No QC file found for subject')
                 subject_processing_details['scans_tsv_present'] = False
                 for temp_req in file_selection_dict.keys():
-                    subject_processing_details[temp_req] = 'Missing QC'
+                    subject_processing_details[temp_req] = 'No scans.tsv'
                 for temp_req in external_requirements_dict.keys():
-                    subject_processing_details['CBRAIN_' + temp_req] = 'Missing QC'
+                    subject_processing_details['CBRAIN_' + temp_req] = 'No scans.tsv'
                 continue
             else:
                 subject_processing_details['scans_tsv_present'] = True
