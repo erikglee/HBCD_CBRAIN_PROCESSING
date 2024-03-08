@@ -1805,6 +1805,9 @@ def append_pie_charts_to_html(html_str, data_dict):
 
 def reformat_df_and_produce_proc_html(study_tracking_df, pipeline_name, ses_label, output_html_path, file_selection_dict):
     
+    study_tracking_df = study_tracking_df.sort_values(by=['subject'])
+    study_tracking_df.reset_index(drop=True, inplace=True)
+    
     study_tracking_df.fillna('Not Evaluated', inplace=True)
     study_tracking_df.loc[study_tracking_df["scans_tsv_present"] == 1, "scans_tsv_present"] = 'True'
     study_tracking_df.loc[study_tracking_df["scans_tsv_present"] == 0, "scans_tsv_present"] = 'False'
