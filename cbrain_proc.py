@@ -2040,6 +2040,8 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                 subject_processing_details[temp_req] = 'Already Processed'
             for temp_req in external_requirements_dict.keys():
                 subject_processing_details['CBRAIN_' + temp_req] = 'Already Processed'
+            subject_processing_details['CBRAIN_Status'] = 'Already Processed'
+            subject_processing_details['scans_tsv_present'] = "Already Processed"
 
             print('    Already has derivatives')
             continue
@@ -2065,6 +2067,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                     subject_processing_details[temp_req] = 'No scans.tsv'
                 for temp_req in external_requirements_dict.keys():
                     subject_processing_details['CBRAIN_' + temp_req] = 'No scans.tsv'
+                subject_processing_details['CBRAIN_Status'] = 'No scans.tsv'
                 continue
             else:
                 subject_processing_details['scans_tsv_present'] = True
