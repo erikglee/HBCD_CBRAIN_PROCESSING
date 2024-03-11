@@ -2071,6 +2071,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                 for temp_req in external_requirements_dict.keys():
                     subject_processing_details['CBRAIN_' + temp_req] = 'No scans.tsv'
                 subject_processing_details['CBRAIN_Status'] = 'No scans.tsv'
+                subject_processing_details['derivatives_found'] = "No (Missing scans.tsv)"
                 continue
             else:
                 subject_processing_details['scans_tsv_present'] = True
@@ -2110,6 +2111,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         if (requirements_satisfied == 0) or (none_found == 1):
             print('    Requirements not satisfied')
             subject_processing_details['derivatives_found'] = "No (Missing BIDS Reqs)"
+            subject_processing_details['CBRAIN_Status'] = "No Proc. (Missing BIDS Reqs)"
             continue
             
         #Check that the external requirements are satisfied for the subject (these are pipeline inputs that will be files/file collections
@@ -2127,6 +2129,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         if subject_external_requirements is None:
             print('    Missing external requirements')
             subject_processing_details['derivatives_found'] = "No (Missing Derived Reqs)"
+            subject_processing_details['CBRAIN_Status'] = "No Proc. (Missing Derived Reqs)"
             continue #skip processing if external requirements aren't found
             
         #Grab files for the subject according to pipeline specific jsons in processing_file_numbers and processing_file_selection folders
