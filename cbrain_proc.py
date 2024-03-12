@@ -1822,6 +1822,9 @@ def reformat_df_and_produce_proc_html(study_tracking_df, pipeline_name, ses_labe
         styler = color_specific_value_cells(styler, study_tracking_df, temp_key, 'Satisfied', color='Green')
         styler = color_specific_value_cells(styler, study_tracking_df, temp_key, 'Failed QC', color='Red')
         styler = color_specific_value_cells(styler, study_tracking_df, temp_key, 'No File', color='Yellow')
+        styler = color_specific_value_cells(styler, study_tracking_df, temp_key, 'Already Processed', color='Green')
+        styler = color_specific_value_cells(styler, study_tracking_df, temp_key, 'Missing QC', color='Yellow')
+        
 
 
     for temp_col in study_tracking_df.columns:
