@@ -1490,7 +1490,7 @@ def grab_external_requirements(subject_name, cbrain_files,
                     break
             if requirement_found == False:
                 requirements_tracking_dict[temp_requirement] = 'No File'
-                print('Requirement {} not found for subject {}'.format(temp_requirement, subject_name))
+                print('    Requirement {} not found for subject {}'.format(temp_requirement, subject_name))
                 return None, requirements_tracking_dict
 
     return subject_external_requirements, requirements_tracking_dict
@@ -2144,6 +2144,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                                                                  bucket = bids_bucket, prefix = bids_bucket_prefix,
                                                                  bids_bucket_config = bids_bucket_config,
                                                                  session = ses_name, associated_files_dict = associated_files_dict)
+        os.remove(subj_ses_qc_file_path) #dont need the scans.tsv file anymore at this point
 
         #Save subject information with other subjects that are ready for processing
         all_to_keep_lists.append(subject_files_list)
