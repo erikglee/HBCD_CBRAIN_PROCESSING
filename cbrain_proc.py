@@ -2176,7 +2176,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
 
         #Launch Processing
         status, json_for_logging = launch_task_concise_dict(pipeline_name, subject_external_requirements_list[i], cbrain_api_token, data_provider_id = derivatives_data_provider_id,
-                                    group_id = group_id, user_id = user_id, task_description = ' via API',
+                                    group_id = group_id, user_id = user_id, task_description = '{} via API'.format(final_subjects_names_for_proc[i]),
                                     all_to_keep = all_to_keep_lists[i], session_label = ses_label)
         json_for_logging['s3_metadata'] = metadata_dicts_list[i]
         if status == False:
@@ -2188,6 +2188,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                     json.dump(json_for_logging, f, indent = 4)
                 #derivatives_bucket_prefix
                 upload_processing_config_log(log_file_name, bucket = derivatives_bucket, prefix = os.path.join(derivatives_bucket_prefix, logs_prefix), bucket_config = derivatives_bucket_config)
+                os.remove(json_for_logging)
 
     
     study_tracking_df = pd.DataFrame.from_dict(study_processing_details)
