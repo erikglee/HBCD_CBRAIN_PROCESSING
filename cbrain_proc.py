@@ -433,7 +433,11 @@ def check_bids_requirements(subject_id, requirements_dict, qc_df = None, bucket 
                             #Otherwise assume the requirement is a number, and
                             #make sure the observed value is less than the requirement
                             else:
-                                if (partial_df[temp_key].values[0] > temp_qc_criteria[temp_key]) or np.isnan(partial_df[temp_key].values[0]):
+                                if np.isnan(partial_df[temp_key].values[0]):
+                                    if (temp_tracking_status == 'No File') or (temp_tracking_status == 'No QC'):
+                                        temp_tracking_status = 'Missing QC'
+                                    requirement_disqualified = 1
+                                elif (partial_df[temp_key].values[0] > temp_qc_criteria[temp_key]):
                                     #print('{}: {}'.format(temp_key, partial_df[temp_key].values[0]))
                                     if (temp_tracking_status == 'No File') or (temp_tracking_status == 'No QC'):
                                         temp_tracking_status = 'Failed QC'
