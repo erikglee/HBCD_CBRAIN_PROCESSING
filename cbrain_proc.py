@@ -2194,7 +2194,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                     json.dump(json_for_logging, f, indent = 4)
                 #derivatives_bucket_prefix
                 upload_processing_config_log(log_file_name, bucket = derivatives_bucket, prefix = os.path.join(derivatives_bucket_prefix, logs_prefix), bucket_config = derivatives_bucket_config)
-                os.remove(json_for_logging)
+                os.remove(log_file_name)
 
     
     study_tracking_df = pd.DataFrame.from_dict(study_processing_details)
