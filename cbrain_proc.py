@@ -2119,7 +2119,10 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             print('    Requirements not satisfied')
             subject_processing_details['derivatives_found'] = "No (Missing BIDS Reqs)"
             subject_processing_details['CBRAIN_Status'] = "No Proc. (Missing BIDS Reqs)"
-            os.remove(subj_ses_qc_file_path)
+            try:
+                os.remove(subj_ses_qc_file_path)
+            except:
+                pass
             continue
             
         #Check that the external requirements are satisfied for the subject (these are pipeline inputs that will be files/file collections
@@ -2138,7 +2141,10 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             print('    Missing external requirements')
             subject_processing_details['derivatives_found'] = "No (Missing Derived Reqs)"
             subject_processing_details['CBRAIN_Status'] = "No Proc. (Missing Derived Reqs)"
-            os.remove(subj_ses_qc_file_path)
+            try:
+                os.remove(subj_ses_qc_file_path)
+            except:
+                pass
             continue #skip processing if external requirements aren't found
             
         #Grab files for the subject according to pipeline specific jsons in processing_file_numbers and processing_file_selection folders
@@ -2146,8 +2152,10 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                                                                  bucket = bids_bucket, prefix = bids_bucket_prefix,
                                                                  bids_bucket_config = bids_bucket_config,
                                                                  session = ses_name, associated_files_dict = associated_files_dict)
-        os.remove(subj_ses_qc_file_path) #dont need the scans.tsv file anymore at this point
-
+        try:
+            os.remove(subj_ses_qc_file_path) #dont need the scans.tsv file anymore at this point
+        except:
+            pass
         #Save subject information with other subjects that are ready for processing
         all_to_keep_lists.append(subject_files_list)
         metadata_dicts_list.append(metadata_dict)
