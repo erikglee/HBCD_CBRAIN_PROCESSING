@@ -1,0 +1,6 @@
+{
+
+    "QALAS" : {"file_naming" : {"QALAS.nii.gz" : true}},
+    "sessions" : {"file_naming" : {"sessions.tsv" : true}}
+
+}
