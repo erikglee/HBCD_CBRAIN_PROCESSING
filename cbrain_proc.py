@@ -601,7 +601,9 @@ def grab_required_bids_files(subject_id, requirements_dict, qc_df = None, bucket
                         if temp_ses_agnostic in temp_file:
                             is_ses_agnostic = 1
                     if is_ses_agnostic == 0:
-                        raise NameError('Error: No QC info for {}'.format(temp_file))
+                        print('   Exiting processing attempt: No QC info for {}'.format(temp_file))
+                        return None, None
+
 
                 #Iterate through each QC requirement (the requirements are
                 #stored as a list of dictionaries, each with one key/value pair)
@@ -2156,6 +2158,11 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             os.remove(subj_ses_qc_file_path) #dont need the scans.tsv file anymore at this point
         except:
             pass
+
+        if type(subject_files_list) == type(None):
+            print('    scans.tsv missing one or more acquisitions. Skipping processing.')
+            continue
+
         #Save subject information with other subjects that are ready for processing
         all_to_keep_lists.append(subject_files_list)
         metadata_dicts_list.append(metadata_dict)
