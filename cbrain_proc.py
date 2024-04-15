@@ -2282,7 +2282,7 @@ def grab_required_bids_files_inner(session_files, partial_requirements_dict, qc_
 
     return partial_output_file_list, partial_metadata_dict
 
-def check_all_files_old_enough(metadata_dict_list, minimum_file_age_days, 
+def check_all_files_old_enough(metadata_dict, minimum_file_age_days, 
                                file_patterns_to_ignore = ['sessions.tsv'],
                                verbose = False):
     '''
@@ -2294,20 +2294,21 @@ def check_all_files_old_enough(metadata_dict_list, minimum_file_age_days,
     
     today = date.today()
     
-    for temp_file in metadata_dict_list:
+    for temp_file in metadata_dict.keys():
         skip_file = False
         for temp_pattern in file_patterns_to_ignore:
-            if temp_file['Key'].endswith(temp_pattern):
+            if metadata_dict[temp_file]['Key'].endswith(temp_pattern):
                 skip_file = True
                 break
         
         if skip_file == False:
-            file_upload_day = date.fromisoformat(temp_file['LastModified'].split('T')[0])
-            day_difference = today - file_upload_day
-            if verbose:
-                print('{} Uploaded {} days ago'.format(temp_file['Key'].split('/')[-1], day_difference.days))
-            if day_difference.days < minimum_file_age_days:
-                return False
+            file_upload_day = date.fromisoformat(metadata_dict[temp_file]['LastModified'].split('T')[0])
+            
+        day_difference = today - file_upload_day
+        if verbose:
+            print('{} Uploaded {} days ago'.format(temp_file.split('/')[-1], day_difference.days))
+        if day_difference.days < minimum_file_age_days:
+            return False
         
     return True
 
@@ -2668,20 +2669,6 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         if len(session_files) == 0:
             print('   No files found for subject/session combo')
             continue
-        
-        
-
-        #Check if all files are old enough for processing. Generally we will
-        #want to wait several days before processing to be sure that there is
-        #time for the QC information to get populated
-        files_old_enough = check_all_files_old_enough(session_files, minimum_file_age_days, 
-                               file_patterns_to_ignore = session_agnostic_files,
-                               verbose = False)
-        if files_old_enough == False:
-            print('    Files not old enough for processing')
-            subject_processing_details['derivatives_found'] = "No (Files Not Old Enough)"
-            subject_processing_details['CBRAIN_Status'] = "No Proc. (Files Not Old Enough)"
-            continue
 
 
         #First run preliminary check for requirements that is only used
@@ -2743,6 +2730,18 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                                                                         session = ses_name, session_agnostic_files = session_agnostic_files,
                                                                         associated_files_dict = associated_files_dict,
                                                                         verbose = False)
+        
+        #Check if all files are old enough for processing. Generally we will
+        #want to wait several days before processing to be sure that there is
+        #time for the QC information to get populated
+        files_old_enough = check_all_files_old_enough(metadata_dict, minimum_file_age_days, 
+                               file_patterns_to_ignore = session_agnostic_files,
+                               verbose = False)
+        if files_old_enough == False:
+            print('    Files not old enough for processing')
+            subject_processing_details['derivatives_found'] = "No (Files Not Old Enough)"
+            subject_processing_details['CBRAIN_Status'] = "No Proc. (Files Not Old Enough)"
+            continue
         
         #Go through all "ancestor" processing requirements, and ensure
         #that the files that would be selected for processing today are
