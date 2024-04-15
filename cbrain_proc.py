@@ -2521,8 +2521,8 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     #subject until the ancestor pipelines are rerun.
     ancestor_pipeline_file = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'ancestor_pipelines.json')
     with open(ancestor_pipeline_file, 'r') as f:
-        tool_config_dict = json.load(f)
-    ancestor_pipelines = str(ancestor_pipeline_file[pipeline_name])
+        ancestors_dict = json.load(f)
+    ancestor_pipelines = ancestors_dict[pipeline_name]
 
     #Load the associated_files dictionary, which tells you which files
     #are associated with specific requirements (i.e. jsons for nii.gz, sbrefs, etc.)
