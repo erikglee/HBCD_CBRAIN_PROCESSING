@@ -1836,6 +1836,7 @@ def check_bids_requirements_v2_inner(session_files, partial_requirements_dict, q
                     if verbose:
                         print('     is {} {} {} : {}'.format(partial_df[temp_dict_key].values[0], temp_qc_criteria[temp_dict_key][1], temp_qc_criteria[temp_dict_key][0], temp_file))
                     if make_comparison(partial_df[temp_dict_key].values[0], temp_qc_criteria[temp_dict_key][1], temp_qc_criteria[temp_dict_key][0]):
+                        continue
                         temp_tracking_status = 'Satisfied'
                     else:
                         if temp_tracking_status != 'Satisfied':
