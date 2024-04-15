@@ -1732,6 +1732,7 @@ def check_bids_requirements_v2(subject_id, session_files, requirements_dict,
                                              session_agnostic_files = session_agnostic_files, verbose = verbose)
             if verbose:
                 print('Requirement Status {}: {}'.format(parent_requirement, requirement_status))
+                print('Temp_tracking_str: {}'.format(temp_tracking_str))
             if type(qc_index) == type(None):
                 continue_loop = False
             else:
@@ -1838,7 +1839,7 @@ def check_bids_requirements_v2_inner(session_files, partial_requirements_dict, q
                         temp_tracking_status = 'Satisfied'
                     else:
                         if temp_tracking_status != 'Satisfied':
-                            'Failed QC'
+                            temp_tracking_status = 'Failed QC'
                         requirement_disqualified = 1
                     
 
