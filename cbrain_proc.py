@@ -2660,9 +2660,14 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
 
         #Reduce the files to those that are relevant for
         #the current session being processed
+        session_level = len(bids_bucket_prefix.split('/')) + 1 
         session_files = grab_session_specific_file_info(subject_files, ses_name,
                             session_agnostic_files = session_agnostic_files,
-                            session_level = 2)
+                            session_level = session_level)
+        if len(session_files) == 0:
+            print('   No files found for subject/session combo')
+            continue
+        
         
 
         #Check if all files are old enough for processing. Generally we will
