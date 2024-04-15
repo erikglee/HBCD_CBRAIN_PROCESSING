@@ -1837,7 +1837,7 @@ def check_bids_requirements_v2_inner(session_files, partial_requirements_dict, q
                         print('     is {} {} {} : {}'.format(partial_df[temp_dict_key].values[0], temp_qc_criteria[temp_dict_key][1], temp_qc_criteria[temp_dict_key][0], temp_file))
                     if make_comparison(partial_df[temp_dict_key].values[0], temp_qc_criteria[temp_dict_key][1], temp_qc_criteria[temp_dict_key][0]):
                         continue
-                        temp_tracking_status = 'Satisfied'
+                        #temp_tracking_status = 'Satisfied'
                     else:
                         if temp_tracking_status != 'Satisfied':
                             temp_tracking_status = 'Failed QC'
@@ -1846,6 +1846,7 @@ def check_bids_requirements_v2_inner(session_files, partial_requirements_dict, q
 
         if requirement_disqualified == 0:
             any_passing = True
+            temp_tracking_status = 'Satisfied'
             
     #If it gets to this point, it means that the current grouping
     #of QC criteria had all the requisite info to determine whether
