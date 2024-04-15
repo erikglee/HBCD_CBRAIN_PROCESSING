@@ -368,6 +368,8 @@ def grab_session_specific_file_info(all_subject_files, session,
             if temp_agnostic in temp_file['Key']:
                 session_files.append(temp_file)
 
+    return session_files
+
 
 def check_bids_requirements(subject_id, requirements_dict, qc_df = None, bucket = 'hbcd-pilot', prefix = 'assembly_bids',
                             bids_bucket_config = False, session = None, session_agnostic_files = ['sessions.tsv']):
