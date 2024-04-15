@@ -2282,7 +2282,7 @@ def grab_required_bids_files_inner(session_files, partial_requirements_dict, qc_
 
     return partial_output_file_list, partial_metadata_dict
 
-def check_all_files_old_enough(metadata_dict, minimum_file_age_days, 
+def check_all_files_old_enough(metadata_dict_list, minimum_file_age_days, 
                                file_patterns_to_ignore = ['sessions.tsv'],
                                verbose = False):
     '''
@@ -2294,21 +2294,20 @@ def check_all_files_old_enough(metadata_dict, minimum_file_age_days,
     
     today = date.today()
     
-    for temp_file in metadata_dict.keys():
+    for temp_file in metadata_dict_list.keys():
         skip_file = False
         for temp_pattern in file_patterns_to_ignore:
-            if metadata_dict[temp_file]['Key'].endswith(temp_pattern):
+            if temp_file['Key'].endswith(temp_pattern):
                 skip_file = True
                 break
         
         if skip_file == False:
-            file_upload_day = date.fromisoformat(metadata_dict[temp_file]['LastModified'].split('T')[0])
-            
-        day_difference = today - file_upload_day
-        if verbose:
-            print('{} Uploaded {} days ago'.format(temp_file.split('/')[-1], day_difference.days))
-        if day_difference.days < minimum_file_age_days:
-            return False
+            file_upload_day = date.fromisoformat(temp_file['LastModified'].split('T')[0])
+            day_difference = today - file_upload_day
+            if verbose:
+                print('{} Uploaded {} days ago'.format(temp_file['Key'].split('/')[-1], day_difference.days))
+            if day_difference.days < minimum_file_age_days:
+                return False
         
     return True
 
