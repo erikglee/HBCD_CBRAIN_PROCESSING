@@ -2668,7 +2668,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         #Check if all files are old enough for processing. Generally we will
         #want to wait several days before processing to be sure that there is
         #time for the QC information to get populated
-        files_old_enough = check_all_files_old_enough(metadata_dict, minimum_file_age_days, 
+        files_old_enough = check_all_files_old_enough(session_files, minimum_file_age_days, 
                                file_patterns_to_ignore = session_agnostic_files,
                                verbose = False)
         if files_old_enough == False:
@@ -2743,20 +2743,21 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         #the same as the files that were selected when the ancestor
         #pipelines were ran. If this is not the case, then processing
         #of this subject will be paused until the ancestor pipelines are rerun.
-        if len(ancestor_pipelines) > 0:
-            are_ancestors_the_same = check_if_ancestor_file_selection_is_same(temp_subject, session_files, ancestor_pipelines_file_selection_dict, qc_df = subj_ses_qc_file,
-                                                        bids_bucket = bids_bucket, bids_prefix = bids_bucket_prefix, bids_bucket_config = bids_bucket_config,
-                                                        session = ses_name, session_agnostic_files = session_agnostic_files, associated_files_dict = associated_files_dict,
-                                                        verbose = verbose, derivatives_bucket_config = derivatives_bucket_config, derivatives_bucket = derivatives_bucket,
-                                                        derivatives_bucket_prefix = derivatives_bucket_prefix, logs_directory = logs_directory)
-            if are_ancestors_the_same == False:
-                print('    Pausing processing until ancestor pipelines are rerun')
-                subject_processing_details['derivatives_found'] = "No (Ancestor Files Different)"
-                subject_processing_details['CBRAIN_Status'] = "No Proc. (Ancestor Files Different)"
-                subject_processing_details['Ancestor_Files'] = 'Different'
-                continue
-            else:
-                subject_processing_details['Ancestor_Files'] = 'Same'
+        if check_ancestor_pipelines:
+            if len(ancestor_pipelines) > 0:
+                are_ancestors_the_same = check_if_ancestor_file_selection_is_same(temp_subject, session_files, ancestor_pipelines_file_selection_dict, qc_df = subj_ses_qc_file,
+                                                            bids_bucket = bids_bucket, bids_prefix = bids_bucket_prefix, bids_bucket_config = bids_bucket_config,
+                                                            session = ses_name, session_agnostic_files = session_agnostic_files, associated_files_dict = associated_files_dict,
+                                                            verbose = verbose, derivatives_bucket_config = derivatives_bucket_config, derivatives_bucket = derivatives_bucket,
+                                                            derivatives_bucket_prefix = derivatives_bucket_prefix, logs_directory = logs_directory)
+                if are_ancestors_the_same == False:
+                    print('    Pausing processing until ancestor pipelines are rerun')
+                    subject_processing_details['derivatives_found'] = "No (Ancestor Files Different)"
+                    subject_processing_details['CBRAIN_Status'] = "No Proc. (Ancestor Files Different)"
+                    subject_processing_details['Ancestor_Files'] = 'Different'
+                    continue
+                else:
+                    subject_processing_details['Ancestor_Files'] = 'Same'
 
             
         
