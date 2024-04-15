@@ -2303,12 +2303,11 @@ def check_all_files_old_enough(metadata_dict, minimum_file_age_days,
         
         if skip_file == False:
             file_upload_day = date.fromisoformat(metadata_dict[temp_file]['LastModified'].split('T')[0])
-            
-        day_difference = today - file_upload_day
-        if verbose:
-            print('{} Uploaded {} days ago'.format(temp_file.split('/')[-1], day_difference.days))
-        if day_difference.days < minimum_file_age_days:
-            return False
+            day_difference = today - file_upload_day
+            if verbose:
+                print('{} Uploaded {} days ago'.format(temp_file.split('/')[-1], day_difference.days))
+            if day_difference.days < minimum_file_age_days:
+                return False
         
     return True
 
