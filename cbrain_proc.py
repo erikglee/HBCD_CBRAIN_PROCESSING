@@ -2294,7 +2294,7 @@ def check_all_files_old_enough(metadata_dict_list, minimum_file_age_days,
     
     today = date.today()
     
-    for temp_file in metadata_dict_list.keys():
+    for temp_file in metadata_dict_list:
         skip_file = False
         for temp_pattern in file_patterns_to_ignore:
             if temp_file['Key'].endswith(temp_pattern):
