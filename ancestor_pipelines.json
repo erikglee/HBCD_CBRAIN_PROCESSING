@@ -1,0 +1,13 @@
+{
+    "mriqc" : [],
+    "qsiprep" : [],
+    "hbcd_qc" : [],
+    "nibabies" : ["bibsnet", "bibsnet_work"],
+    "xcp_d" : ["nibabies", "bibsnet", "bibsnet_work"],
+    "made" : [],
+    "osprey" : ["bibsnet", "bibsnet_work"],
+    "symri_postproc" : ["bibsnet", "bibsnet_work"],
+    "qsiprep_qc" : ["qsiprep"],
+    "bibsnet_work" : [],
+    "bibsnet" : ["bibsnet_work"]
+}

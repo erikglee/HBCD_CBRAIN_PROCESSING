@@ -15,6 +15,7 @@ import re
 import base64
 from io import BytesIO
 import matplotlib.pyplot as plt
+import html_tools
 
 
 
@@ -156,6 +157,51 @@ def find_s3_subjects(bids_bucket_config, bucket = 'hbcd-pilot', prefix = 'assemb
     #return list of s3 subjects
     return s3_subjects
 
+def grab_subject_file_info(subject_id, bids_bucket_config, bucket = 'hbcd-pilot', prefix = 'assembly_bids'):
+    '''Utility that grabs BIDS data for a given subject
+        
+    Parameters
+    ----------
+    
+    subject_id : str
+        Subject ID such as 'sub-1234'
+    bids_bucket_config: str
+        The config for the S3 account used
+        to access the bucket
+    bucket: str, default 'hbcd-pilot'
+        Name of bucket to query
+    prefix: str, default 'assembly_bids'
+        Where to start search (i.e. subfolder)
+        within the bucket
+        
+    Returns
+    -------
+    
+    List of dictionaries, one dictionary per
+    object that a subject has in S3 BIDS
+        
+    '''
+
+
+    
+    # Do some cosmetics we look for the subject ID at the
+    # right level
+    full_prefix = os.path.join(prefix, subject_id)
+    prefix_offset = len(full_prefix.split('/')) - 1
+    if len(prefix) == 0:
+        prefix_offset = prefix_offset - 1
+        
+    # Create a PageIterator from the Paginator
+    page_iterator = create_page_iterator(bucket = bucket, prefix = full_prefix, bucket_config = bids_bucket_config)
+
+    #Iterate through bucket to find BIDS files for this subject
+    subject_files = []
+    for page in page_iterator:
+        if 'Contents' in page:
+            for temp_dict in page['Contents']:
+                subject_files.append(temp_dict)
+    return subject_files
+
 
 def create_page_iterator(bucket = 'hbcd-pilot', prefix = 'derivatives', bucket_config = False, return_client_instead = False):
     '''Utility to create a page iterator for s3 bucket'''
@@ -275,6 +321,54 @@ def upload_processing_config_log(file_name, bucket = 'hbcd-cbrain-test', prefix 
         logging.error(e)
         return False
     return True
+
+
+def grab_session_specific_file_info(all_subject_files, session,
+                                session_agnostic_files = ['sessions.tsv'],
+                                session_level = None):
+    '''Function that reduces list of S3 files to those from specific subject session
+    
+    Parameters
+    ----------
+    all_subject_files : list of dicts
+        List of file object dictionaries from S3 for files
+        that belong to a given subject
+    session: str
+        The session (i.e. 'ses-V02') that output files will be
+        required to be associated with
+    session_agnostic_files: list of strs, default ['sessions.tsv']
+        Naming templates to accept for files that you want to
+        include that don't specifically belong to a given session
+    session_level: None or int, default None
+        If None, the function will search for files that have the provided
+        session info in the file name. If an integer such as 2 is provided,
+        it will assume that there is organization such as /study/subject/ses/...
+        and it will only accept files where the ses is found at that specific
+        location (2 is like 3 here because of zero indexing)
+    
+    '''
+    
+
+    if type(session_level) == type(None):
+        if session[0] != '/':
+            session = '/' + session
+        if session[-1] != '/':
+            session = session + '/'
+
+    session_files = []
+    for temp_file in all_subject_files:
+        if type(session_level) == type(None):
+            if session in temp_file['Key']:
+                session_files.append(temp_file)
+        else:
+            file_split = temp_file['Key'].split('/')[session_level]
+            if file_split == session:
+                session_files.append(temp_file)
+        for temp_agnostic in session_agnostic_files:
+            if temp_agnostic in temp_file['Key']:
+                session_files.append(temp_file)
+
+    return session_files
 
 
 def check_bids_requirements(subject_id, requirements_dict, qc_df = None, bucket = 'hbcd-pilot', prefix = 'assembly_bids',
@@ -743,67 +837,6 @@ def is_qc_info_required(requirement_dictionary):
     
     return False
 
-def register_cbrain_csvs_in_cbrain(file_name, cbrain_api_token, user_id = 4022, group_id = 10367, browse_path = "cbrain_misc/cbrain_csvs", data_provider_id = 710):
-    '''Register CBRAIN CSVs in CBRAIN
-
-    This function will try to register a CBRAIN
-    CSV file from your S3 data provider in CBRAIN.
-    Note - if the file already exists in CBRAIN,
-    the registration will fail. Even if the upload
-    is unsuccessful, it will probably finish without
-    error'ing out. Look at the printed outputs for
-    more detail.
-    
-    Parameters
-    ----------
-    file_name : str
-        The name of the CBRAIN CSV file
-        in your DataProvider that needs
-        to get registred in CBRAIN
-    cbrain_api_token : str
-        The api token generated when you logged into cbrain
-    user_id : int, default 4022
-        Your CBRAIN user ID, by default 4022
-    group_id : int, default 10367
-        The corresponding group/project ID in cbrain, by default 10367
-    browse_path : str, default "cbrain_misc/cbrain_csvs"
-        The directory where CBRAIN CSV files are stored
-        on the S3 data provider
-    data_provider_id : int, default 710
-
-    '''
-
-    print('Attempting to register file {}'.format(file_name))
-
-    data = {
-    "basenames": [file_name], #name of file
-    "filetypes": ["ExtendedCbrainFileList-{}".format(file_name)], #filetype - name of file
-    "as_user_id": user_id, #my user id
-    "browse_path" : browse_path, #this folder is in base layer of dp
-    "other_group_id": group_id #loris abcd group
-        }
-
-    base_url = 'https://portal.cbrain.mcgill.ca'
-    task_params = (
-        ('cbrain_api_token', cbrain_api_token),
-    )
-
-    dp_response = requests.post(
-        url = '/'.join([base_url, 'data_providers', str(data_provider_id), 'register']),
-        headers = {'Accept': 'application/json'},
-        params = task_params,
-        data = data
-    )
-
-    dp_response.json()
-    if dp_response.status_code == 200:
-        print('CBRAIN Notice: {}'.format(dp_response.json()['notice']))
-        print('CBRAIN Error: {}'.format(dp_response.json()['error']))
-    else:
-        print("Registration of {} failed.".format(file_name))
-        print(dp_response.text)
-                      
-    return
 
 def download_scans_tsv_file(bucket_config, output_folder, subject, session, bids_prefix = 'assembly_bids', bucket = 'hbcd-pilot', client = None):
     '''Download scans.tsv file for a given subject/session
@@ -949,51 +982,11 @@ def cbrain_mark_as_newer(file_id, cbrain_api_token):
         print(dp_response.text)
                       
     return
-    
-    
-def check_if_derivatives_exist(subject_name, pipeline_folder, bucket = 'hbcd-pilot', prefix = 'derivatives', derivatives_bucket_config = False):
-    '''Utility to check if a subject has specific BIDs derivatives
-    
-    Parameters
-    ----------
-    
-    subject_name : str
-        The name of the subject whose output
-        you want to check (i.e. sub-01)
-    pipeline_folder : str
-        The name of the pipeline folder
-        found under prefix (i.e. mriqc)
-    bucket : str, default 'hbcd-pilot'
-        The name of the bucket to query for files
-    prefix : str, default 'derivatives'
-        The prefix to restrict the files returned by
-        the search query 
-    bids_bucket_config : bool or str, default False
-        If bids_bucket_config is a string, this
-        will be used as a config file to identify
-        the s3 credentials... otherwise the default
-        location will be used
         
-    Returns
-    -------
-    
-    bool : True if any S3 files are found for the
-           bucket/prefix/pipeline/subject combo,
-           otherwise False
-        
-    '''
-
-    # Do some cosmetics so that the prefix includes the pipeline
-    # name and so that later we look for the subject ID at the
-    # right level
-    full_prefix = os.path.join(prefix, pipeline_folder, subject_name)
-    page_iterator = create_page_iterator(bucket = bucket, prefix = full_prefix, bucket_config = derivatives_bucket_config)
-    for page in page_iterator:
-        if 'Contents' in page:
-            if len(page['Contents']):
-                return True
-        else:
-            return False
+def file_exists_under_prefix(bucket_name, prefix, s3_config):
+    s3 = create_boto3_client(s3_config = s3_config)
+    response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix, MaxKeys=1)
+    return 'Contents' in response
     
 def grab_json(json_config_location, pipeline_name, session_label = None):
     """Load json config for a given pipeline
@@ -1015,9 +1008,7 @@ def grab_json(json_config_location, pipeline_name, session_label = None):
     json_contents : dict
 
     """
-    
-    #hello
-    
+        
     #Grab the json config path and load it
     if json_config_location != False:
         json_config_location = json_config_location
@@ -1310,56 +1301,6 @@ def find_current_cbrain_tasks(cbrain_api_token, data_provider_id = None):
         return tasks_to_return
 
 
-def find_cbrain_extended_file_list_files(cbrain_api_token, data_provider_id = 710):
-    '''Finds existing CBRAIN CSV files
-    
-    Finds CBRAIN CSV files/Extended File Lists. This list will be used
-    to show which subjects processing has already been attempted on.
-    
-    Parameters
-    ----------
-    
-    cbrain_api_token : str
-        The CBRAIN API token for the current session
-    data_provider_id : int
-        Data provider ID to restrict files to
-        
-    Returns
-    -------
-    list of dictionaries with info on CBRAIN CSV files
-    
-    '''
-    base_url = 'https://portal.cbrain.mcgill.ca'
-    files = []
-    files_request = {'cbrain_api_token': cbrain_api_token, 'page': 1, 'per_page': 1000}
-
-    while True:
-        files_response = requests.get(
-            url = '/'.join([base_url, 'userfiles']),
-            data = files_request,
-            headers = {'Accept': 'application/json'}
-        )
-        if files_response.status_code != requests.codes.ok:
-            print('User files request failed.')
-            print(files_response)
-            break
-        # Collect the responses on this page then increment
-        files += files_response.json()
-        files_request['page'] += 1
-        # Stop requesting responses when we're at the last page
-        if len(files_response.json()) < files_request['per_page']:
-            break 
-            
-    #Restrict the returned files to ones in the current DP and of type ExtendedCbrainFileList
-    filter_results = list(filter(lambda f: 'ExtendedCbrainFileList' == f['type'], files))
-    filter_results = list(filter(lambda f: data_provider_id == f['data_provider_id'], filter_results))
-
-    #Print out info about what files were found
-    print("{} total files found\n".format(str(len(files))))
-    print("{} Extended File List files found under DP {}".format(len(filter_results), data_provider_id))
-    
-    return filter_results
-
 def find_cbrain_files_on_dp(cbrain_api_token, data_provider_id = 710):
     '''Returns list of files on data provider
     
@@ -1647,236 +1588,859 @@ def check_rerun_status(cbrain_subject_id, cbrain_tasks, derivatives_data_provide
 
     return False, example_status
 
-def color_specific_value_cells(styler, df, primary_column, value="specific_value", color="red", secondary_column=None):
-    """
-    Applies color to cells in the secondary column of a Styler object based on conditions met in the primary column
-    of the provided DataFrame. If no secondary column is specified, applies coloring to the primary column.
 
-    Parameters:
-    - styler: pandas.io.formats.style.Styler, the Styler object of the DataFrame to apply styles to.
-    - df: pandas.DataFrame, the DataFrame used to determine the styling conditions.
-    - primary_column: str, the name of the primary column to check the condition against.
-    - value: str, the value to check for in the primary column.
-    - color: str, the CSS color to apply to cells in the secondary column based on the primary column's condition.
-    - secondary_column: str, optional, the name of a secondary column where the color is applied based on the primary column's condition.
 
-    Returns:
-    - pandas.io.formats.style.Styler, the updated Styler object with applied styles.
-    """
-    # Create a mask based on the condition in the primary column
-    mask = df[primary_column] == value
-
-    # Define the function to apply styles
-    def apply_styles(row):
-        if row.name in df.index:
-            primary_condition = mask.iloc[row.name]
-            colors = [''] * len(row)  # Initialize with no coloring
-            if primary_condition:
-                if secondary_column:  # Apply color to the secondary column based on primary condition
-                    colors[df.columns.get_loc(secondary_column)] = f'background-color: {color}'
-                else:  # Or apply to the primary column if no secondary is specified
-                    colors[df.columns.get_loc(primary_column)] = f'background-color: {color}'
-        return colors
-
-    # Apply the function across the DataFrame, row-wise
-    updated_styler = styler.apply(apply_styles, axis=1)
+def check_bids_requirements_v2(subject_id, session_files, requirements_dict,
+                               qc_df = None, bucket = 'hbcd-pilot', prefix = 'assembly_bids',
+                               bids_bucket_config = False, session = None,
+                               session_agnostic_files = ['sessions.tsv'],
+                               verbose = False):
     
-    return updated_styler
-
-
-def add_title_and_list_to_html_content(html_content, title, list_of_strings):
-    """
-    Modifies HTML content to include a title and a series of bullet points.
-
-    Parameters:
-    - html_content: str, the HTML content as a string.
-    - title: str, the title to be added to the HTML.
-    - list_of_strings: list, a list of strings to be converted into bullet points.
-
-    Returns:
-    - str, the modified HTML content with added title and bullet points.
-    """
-    # Create the title and bullet points HTML
-    title_html = f'<h1>{title}</h1>\n'
-    list_html = '<ul>\n' + ''.join([f'<li>{item}</li>\n' for item in list_of_strings]) + '</ul>\n'
+    '''Function that checks if a subject has required BIDS data for processing
     
-    # Insert the title and list HTML before the table
-    # Assuming the first occurrence of <table relates to the DataFrame's table
-    table_index = html_content.find('<table')
-    if table_index == -1:
-        # If no table is found, prepend the title and list to the HTML content
-        modified_html = title_html + list_html + html_content
+    See the full documentation for grab_required_bids_files_v2 for more context.
+    This function is generally run before grab_required_bids_files_v2 to figure
+    out whether the subject has all the BIDS files required for processing. Generally
+    the requirements_dict given to the current function may be smaller than the 
+    requirements_dict given to grab_required_bids_files_v2, and this function may
+    be called several times to test different file requirement combinations, any
+    one of which indicates that a subject can be processed. As long as one or more
+    requirements_dict is given to the current function is satisfied then all
+    requirements_dict objects are generally combined to allow for the union of
+    all requirements to be present during processing. For example one requirement
+    may be for a T1w image, another for a T2w image, this function may be called
+    first to test the T1w image requirement then again to test the T2w image requirement
+    but when grab_required_bids_files_v2 is called a joint requirements_dict might be
+    used that says to grab all T1w images and T2w images if they are available and have
+    the right quality. Of course if you only want to process subjects that have good
+    T1w and good T2w images then you would give both this function and grab_required_bids_files_v2
+    requirements_dict files that specify both image types.
+    
+    
+    Parameters
+    ----------
+    subject_id : str
+        Subject whose BIDS requirements are being checked.
+        (i.e. sub-01)
+    session_files : list of dicts
+        A list of file info generated from boto3 that contains
+        all files for a subject that are associated with the
+        current session (i.e. ses-V02). This often also includes
+        session agnostic files like the sessions.tsv file that
+        some pipelines require for processing. See grab_subject_file_info
+        and grab_session_specific_file_info for more details.
+    requirements_dict : dict
+        Dictionary listing possible requirements that must be
+        satisfied for a file to be included in processing.
+        (See example above)
+    qc_df : None or pandas dataframe
+        The scans.tsv file for the current session loaded
+        as a pandas dataframe. This will be used for any
+        inforporation of qc information.
+    bucket : str, default 'hbcd-pilot'
+        The name of the bucket to query for files
+    prefix : str, default 'assembly_bids'
+        The prefix to restrict the files returned by
+    bids_bucket_config : bool or str, default False
+        If bids_bucket_config is a string, this
+        will be used as a config file to identify
+        the s3 credentials... otherwise the default
+        location will be used
+    session : str
+        The session being used for processing (i.e. ses-V02)
+    session_agnostic_files : list of str, default ['sessions.tsv']
+        List of files from session_files that are not actually session
+        specific
+    verbose : bool, default False
+        Print more details
+
+    
+    Returns
+    -------
+    list
+        List of file paths that satisfy the requirements
+        and that will be used for processing.
+    dict
+        Dictionary that contains status information for
+        the various high-level requirements represented
+        within requirements_dict
+        
+    Returns
+    -------
+    
+    bool
+        True if requirements are all satisfied,
+        otherwise False
+    dict
+        A dictionary that is used to help keep track
+        of whether different processing requirements
+        are satisfied for the current subject
+        
+    '''
+
+    # Create a dictionary that will store information about the
+    # different processing requirements. This is not actually
+    # used for processing, but will be used to build a spreadsheet
+    # that describes which subjects were/werent processed.
+    requirements_tracking_dict = {}
+    for temp_req in requirements_dict.keys():
+        requirements_tracking_dict[temp_req] = 'No File'
+
+    
+    # Do some cosmetics so that the prefix includes the pipeline
+    # name and so that later we look for the subject ID at the
+    # right level
+    full_prefix = os.path.join(prefix, subject_id)
+    prefix_offset = len(full_prefix.split('/')) - 1
+    if len(prefix) == 0:
+        prefix_offset = prefix_offset - 1
+        
+    # Create a PageIterator from the Paginator
+    page_iterator = create_page_iterator(bucket = bucket, prefix = full_prefix, bucket_config = bids_bucket_config)
+
+    #Iterate through bucket to find BIDS files for this subject
+    subject_files = []
+    for page in page_iterator:
+        if 'Contents' in page:
+            for temp_dict in page['Contents']:
+                subject_files.append(temp_dict['Key'].split('/')[-1])
+        else:
+            print('No BIDS contents found for: {}'.format(subject_id))
+
+    parent_requirements_satisfied = 0
+    for parent_requirement in requirements_dict.keys():
+        
+        #Check if the current requirement has any associated QC criteria
+        if verbose:
+            print('Parent Requirement: {}'.format(parent_requirement))
+        if 'qc_criteria' in requirements_dict[parent_requirement]:
+            num_iters_allowed = len(requirements_dict[parent_requirement]['qc_criteria'])
+            qc_index = 0
+        else:
+            num_iters_allowed = 1
+            qc_index = None
+            
+        #The following loop to find files is necessary because there may
+        #be cases where there is different QC information available for
+        #different subjects, and we want to process as many subjects as
+        #possible using manual QC measures when they are available, but
+        #in absence of manual QC measures we may use automated QC measures.
+        continue_loop = True
+        while continue_loop:
+            requirement_status, temp_tracking_str = check_bids_requirements_v2_inner(session_files, requirements_dict[parent_requirement], 
+                                             qc_index = qc_index, qc_df = qc_df, 
+                                             session_agnostic_files = session_agnostic_files, verbose = verbose)
+            if verbose:
+                print('Requirement Status {}: {}'.format(parent_requirement, requirement_status))
+                print('Temp_tracking_str: {}'.format(temp_tracking_str))
+            if type(qc_index) == type(None):
+                continue_loop = False
+            else:
+                qc_index += 1
+            if (type(requirement_status) == type(None)) and (qc_index != num_iters_allowed):
+                continue
+            else:
+                continue_loop = False
+            continue_loop = False
+           
+                             
+        #print('Requirement Disqualified Status: {}\n'.format(requirement_disqualified))
+        if requirement_status == True:
+            parent_requirements_satisfied += 1
+            temp_tracking_str = 'Satisfied'
+        requirements_tracking_dict[parent_requirement] = temp_tracking_str
+        
+    if verbose:
+        print('Num parent reqs satisfied: {}/{}'.format(parent_requirements_satisfied, len(requirements_dict.keys())))
+    
+    #If all requirements have been satisfied at least once return true, else false
+    if parent_requirements_satisfied == len(requirements_dict.keys()):
+        #print(len(requirements_dict.keys()))
+        return True, requirements_tracking_dict
     else:
-        modified_html = html_content[:table_index] + title_html + list_html + html_content[table_index:]
+        return False, requirements_tracking_dict
     
-    return modified_html
 
-
-def add_prettier_background_to_html(html_content):
-    """
-    Modifies the given HTML content to include prettier background formatting using CSS.
-
-    Parameters:
-    - html_content: str, the HTML content as a string.
-
-    Returns:
-    - str, the modified HTML content with additional CSS for prettier formatting.
-    """
-    # Define the CSS for prettier background and overall formatting
-    css_styles = """
-    <style>
-    body {
-        font-family: Arial, sans-serif;
-        background-color: #f0f0f0;
-        margin: 20px;
-        padding: 20px;
-    }
-    table {
-        border-collapse: collapse;
-        width: 100%;
-    }
-    th, td {
-        text-align: left;
-        padding: 8px;
-    }
-    tr:nth-child(even) {
-        background-color: #dddddd;
-    }
-    th {
-        background-color: #4CAF50;
-        color: white;
-    }
-    h1 {
-        color: #333;
-    }
-    ul {
-        list-style-type: square;
-    }
-    li {
-        margin-bottom: 5px;
-    }
-    </style>
-    """
-
-    # Insert the CSS at the beginning of the HTML content
-    html_with_css = css_styles + html_content
-
-    return html_with_css
-
-def append_pie_charts_to_html(html_str, data_dict):
-    """
-    Appends high-resolution pie charts to the end of an HTML string based on a provided dictionary.
-    Each chart has a title, and the legend shows the count for each category.
-
-    Parameters:
-    - html_str: A string containing HTML.
-    - data_dict: A dictionary with titles of plots and data for the pie charts.
-
-    Returns:
-    - A modified HTML string with pie charts appended.
-    """
-
-    # Start the section for pie charts in the HTML
-    new_html = html_str + "\n<div id='pie-charts'>\n"
-
-    for title, data in data_dict.items():
-        # Prepare data for the pie chart
-        labels = list(data.keys())
-        sizes = list(data.values())
-        # Create labels with counts for the legend
-        legend_labels = [f"{label} ({size})" for label, size in zip(labels, sizes)]
-
-        # Create a pie chart
-        fig, ax = plt.subplots()
-        wedges, texts = ax.pie(sizes, startangle=90, counterclock=False)
-        ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
-        plt.title(title)
-        ax.legend(wedges, legend_labels, title="Categories", loc="center left", bbox_to_anchor=(1, 0, 0.5, 1))
-
-        # Convert the plot to a PNG image, then encode it in base64 at high resolution
-        img_data = BytesIO()
-        plt.savefig(img_data, format='png', dpi=150, bbox_inches="tight")
-        plt.close()  # Close the plot to free memory
-        img_data.seek(0)  # Go to the beginning of the BytesIO buffer
-        img_base64 = base64.b64encode(img_data.read()).decode('utf-8')
-
-        # Embed the base64-encoded PNG image into the HTML
-        img_html = f"<img src='data:image/png;base64,{img_base64}' alt='{title}'><br>\n"
-        new_html += img_html
-
-    # Close the pie charts section
-    new_html += "</div>\n"
-
-    return new_html
-
-def reformat_df_and_produce_proc_html(study_tracking_df, pipeline_name, ses_label, output_html_path, file_selection_dict):
+def check_bids_requirements_v2_inner(session_files, partial_requirements_dict, qc_index = None, qc_df = None, 
+                                         session_agnostic_files = ['sessions.tsv'], verbose = False):
+    #This function looks for session files that have the right name for processing
+    #and pass the QC Criteria (if there are any available). The reason why this
+    #is a standalone function is so that different qc_indices can be used, signifying
+    #different qc criteria that will be referred to based on what qc measures are
+    #available for a given subject.
     
-    study_tracking_df = study_tracking_df.sort_values(by=['subject'])
-    study_tracking_df.reset_index(drop=True, inplace=True)
     
-    study_tracking_df.fillna('Not Evaluated', inplace=True)
-    study_tracking_df.loc[study_tracking_df["scans_tsv_present"] == 1, "scans_tsv_present"] = 'True'
-    study_tracking_df.loc[study_tracking_df["scans_tsv_present"] == 0, "scans_tsv_present"] = 'False'
-    study_tracking_df.loc[study_tracking_df["derivatives_found"] == 1, "derivatives_found"] = 'True'
-    study_tracking_df.loc[study_tracking_df["derivatives_found"] == 0, "derivatives_found"] = 'False'
-    styler = study_tracking_df.style
-    for temp_key in file_selection_dict.keys():
-        styler = color_specific_value_cells(styler, study_tracking_df, temp_key, 'Satisfied', color='Green')
-        styler = color_specific_value_cells(styler, study_tracking_df, temp_key, 'Failed QC', color='Red')
-        styler = color_specific_value_cells(styler, study_tracking_df, temp_key, 'No File', color='Yellow')
-        styler = color_specific_value_cells(styler, study_tracking_df, temp_key, 'Already Processed', color='Green')
-        styler = color_specific_value_cells(styler, study_tracking_df, temp_key, 'Missing QC', color='Yellow')
+    #Grab the current QC criteria. Only necessary if QC Criteria
+    #is in the partial_requirements_dict. If there are more than
+    #one QC Criteria (i.e. there are backup QC criteria), then 
+    #the qc_index will say which one is currently being referenced
+    any_passing = False
+    temp_tracking_status = 'No File'
+    if verbose:
+        print('Current QC Index: {}'.format(qc_index))
+    if 'qc_criteria' in partial_requirements_dict:
+        if type(qc_index) == type(None):
+            temp_qc_criteria_group = partial_requirements_dict['qc_criteria']
+        else:
+            temp_qc_criteria_group = partial_requirements_dict['qc_criteria'][qc_index]
+    
+    temp_requirement_file_list = []
+    child_requirements = partial_requirements_dict['file_naming']
+    for j, temp_file in enumerate(session_files):
+        child_requirements_satisfied = 0
+        for child_requirement in child_requirements.keys():
+            if (child_requirement in temp_file['Key']) == child_requirements[child_requirement]:
+                child_requirements_satisfied += 1
+            else:
+                break
+        if child_requirements_satisfied == len(child_requirements.keys()):
+            temp_requirement_file_list.append(temp_file['Key'])
+
+
+    for j, temp_file in enumerate(temp_requirement_file_list):
+        requirement_disqualified = 0
+        if ('qc_criteria' in partial_requirements_dict) and (type(qc_df) != type(None)):
+            partial_df = qc_df[qc_df['filename'].str.contains(temp_file.split('/')[-1])]
+            if len(partial_df) == 0:
+                is_ses_agnostic = 0
+                for temp_ses_agnostic in session_agnostic_files:
+                    if temp_ses_agnostic in temp_file:
+                        is_ses_agnostic = 1
+                if is_ses_agnostic == 0:
+                    print('   Exiting processing attempt: No QC info for {}'.format(temp_file))
+                    return None, 'No QC'
+
+
+            #Iterate through each QC requirement (the requirements are
+            #stored as a list of dictionaries, each with one key/value pair)
+            if verbose:
+                print('File being investigated: {}'.format(temp_file.split('/')[-1]))
+            if verbose:
+                print('   temp_qc_criteria_group: {}'.format(temp_qc_criteria_group))
+            for temp_qc_criteria in temp_qc_criteria_group:
+                if verbose:
+                    print('   temp_qc_criteria: {}'.format(temp_qc_criteria))
+                for temp_dict_key in temp_qc_criteria:
+                    
+                    #Check if there is a null value for the current QC criteria.
+                    #If there is a null value here, we will want to error out so
+                    #the next grouping of QC criteria can be used if one is available.
+                    #print('temp_dict: {}'.format(temp_dict))
+                    #temp_dict_key = list(temp_dict.keys())[0]
+                    if pd.isnull(partial_df[temp_dict_key].values[0]):
+                        if verbose:
+                            print('   SKIPPING CRITERIA BECAUSE NULL WAS IDENTIFIED: {}'.format(partial_df[temp_dict_key].values[0]))
+                        temp_tracking_status = 'Missing QC'
+                        return None, temp_tracking_status
+                    
+                    if verbose:
+                        print('     is {} {} {} : {}'.format(partial_df[temp_dict_key].values[0], temp_qc_criteria[temp_dict_key][1], temp_qc_criteria[temp_dict_key][0], temp_file))
+                    if make_comparison(partial_df[temp_dict_key].values[0], temp_qc_criteria[temp_dict_key][1], temp_qc_criteria[temp_dict_key][0]):
+                        continue
+                        #temp_tracking_status = 'Satisfied'
+                    else:
+                        if temp_tracking_status != 'Satisfied':
+                            temp_tracking_status = 'Failed QC'
+                        requirement_disqualified = 1
+                    
+
+        if requirement_disqualified == 0:
+            any_passing = True
+            temp_tracking_status = 'Satisfied'
+            
+    #If it gets to this point, it means that the current grouping
+    #of QC criteria had all the requisite info to determine whether
+    #the current file was good enough for processing. Then a true/false
+    #rating mentions whether that criteria was satisfied or not.
+    return any_passing, temp_tracking_status
+
+
+def make_comparison(new_val, operator, reference):
+    if operator == 'equals':
+        return new_val == reference
+    elif operator == 'less_than':
+        return new_val < reference
+    elif operator == 'greater_than':
+        return new_val > reference
+    else:
+        raise NameError('Error: unknown operator {}'.format(operator))
+    
+def find_associated_files(subject_id, associated_files_dict, output_file_list,
+                          session_files, prefix):
+    '''
+    Used by grab_required_bids_files_v2
+    '''
+            
+    #Also find all the various files that are associated with the requirements
+    metadata_dict = {}
+    
+    if type(associated_files_dict) != type(None):
         
+        new_files = []
+        for temp_file in output_file_list:
+            for temp_key in associated_files_dict.keys():
+                if temp_key in temp_file:
+                    for temp_term in associated_files_dict[temp_key]:
+                        
+                        temp_file_path = temp_file.replace(temp_key, temp_term)
+                        for temp_dict in session_files:
+                            if temp_dict['Key'] == temp_file_path:
+                                new_file_name = temp_dict['Key']
+                                new_files.append(new_file_name)
+                                metadata_dict[new_file_name] = temp_dict
 
-
-    for temp_col in study_tracking_df.columns:
-        styler = color_specific_value_cells(styler, study_tracking_df, temp_col, 'Not Evaluated', color='Grey')
-        if temp_col.startswith('CBRAIN_'):
-            styler = color_specific_value_cells(styler, study_tracking_df, temp_col, 'Satisfied', color='Green')
-            styler = color_specific_value_cells(styler, study_tracking_df, temp_col, 'No File', color='Red')
-
-
-    styler = color_specific_value_cells(styler, study_tracking_df, 'scans_tsv_present', 'True', color='Green')
-    styler = color_specific_value_cells(styler, study_tracking_df, 'scans_tsv_present', 'False', color='Red')
-
-    red_cbrain_statuses = ['Terminated', 'Failed To Setup', 'Failed To PostProcess', 'Failed Setup Prerequisites', 'Failed PostProcess Prerequisites', 'Suspended', 'Failed', 'Failed On Cluster']
-    for temp_status in red_cbrain_statuses:
-        styler = color_specific_value_cells(styler, study_tracking_df, 'CBRAIN_Status', temp_status, color='Red')
-        styler = color_specific_value_cells(styler, study_tracking_df, 'CBRAIN_Status', temp_status, color='Red', secondary_column = 'subject')
-    styler = color_specific_value_cells(styler, study_tracking_df, 'CBRAIN_Status', 'Completed', color='Green')
-    styler = color_specific_value_cells(styler, study_tracking_df, 'derivatives_found', 'True', color='Green', secondary_column = 'subject')
-    styler = color_specific_value_cells(styler, study_tracking_df, 'derivatives_found', 'True', color='Green', secondary_column = 'CBRAIN_Status')
-    styler = color_specific_value_cells(styler, study_tracking_df, 'derivatives_found', 'True', color='Green')
-
-
-
-    html = styler.to_html(index = False)
-    title = "Summary for HBCD session {} {} processing".format(ses_label, pipeline_name)
-    text_list = []
-    text_list.append("The color coding for the subject label is a quick presentation of a subject's processing. Green indicates processing has been completed. Yellow indicates that processing wasn't attempted because some prerequisite file was missing. Red indicates failed attempts at processing.")
-    text_list.append("It is important to remember that a failed processing task can be due to a variety of reasons including actual issues with how the pipeline is interacting with the imaging data, or data-agnostic issues within CBRAIN or MSI.")
-    text_list.append('"Not Evaluated" entries occur when we identify soemthing in the processing routine that prevents processing from being attempted. This includes (1) previous attempts at processing, (2) missing scans.tsv file, (3) failure to have reqiured BIDS files of sufficient quality in one or more categories of imaging modalities, (4) missing prerequisite outputs from another pipeline.')
-    text_list.append('Any columns beginning with "CBRAIN_" represent file collections in CBRAIN that are expected for the current processing pipeline. These columns generally represent the outputs from previous processing pipelines that will be fed to the current pipeline for processing. If a value of "No File" is observed, this either means processing with the other pipeline was not attempted or unsuccessful.')
-    text_list.append('There are certain cases where a subject has specific file types that are missing or failing QC but processing still occurred for the subject. This is because there are multiple sets of criteria that are used to determine whether a subject should be processed. For example if a subject has a good T1w and T2w image then both will be included for processing, but processing will still occur if only a good T2w image is available for processing. For a subject to be processed, they must have all the files needed to satisfy at least one of the requirements files for the given pipeline defined at https://github.com/erikglee/HBCD_CBRAIN_PROCESSING/tree/qc_aware_proc/comprehensive_processing_prerequisites . If at least one requirement is satisfied then as many files as possible (up to the limits defined by the "num_to_keep" field) will be included in processing.')
-    html = add_title_and_list_to_html_content(html, title, text_list)
+        output_file_list = list(set(output_file_list + new_files))
+        output_file_list.sort()
+                
+    return output_file_list, metadata_dict
     
-    #Create dict with instructions for pie charts
-    plot_dict = {}
-    columns_to_skip_plotting = ['subject', 'pipeline', 'session']
-    for temp_col in study_tracking_df.columns:
-        if temp_col not in columns_to_skip_plotting:
-            plot_dict[temp_col] = study_tracking_df[temp_col].value_counts().to_dict()
+
+
+def grab_required_bids_files_v2(subject_id, session_files, requirements_dict, qc_df = None, bucket = 'hbcd-pilot',
+                                prefix = 'assembly_bids', bids_bucket_config = False, session = None, 
+                                session_agnostic_files = ['sessions.tsv'], associated_files_dict = None,
+                                verbose = False):
+    '''Utility to grab the names of BIDS files required for processing.
     
-    #Add pie charts to html
-    html = append_pie_charts_to_html(html, plot_dict)
+    This function assumes check_bids_requirements
+    has already been ran and that the user is fine
+    with the number of requirements satisfied in the
+    requirements dict. The goal of this script is to
+    return a list of files that satisfies the requirements
+    dict. The returned list will only have (at most) the
+    number of requirements specified by num_requirements_dict.
+    For example, the user can ask for 1, 2, or 'all' files that
+    fullfill a given requirement. In the case that there are
+    0 files fullfilling a requirement, the function will only
+    return the file paths specified by the other requirements.
+    
+    One field of the requirements dictionary may be 'qc_criteria'.
+    If 'qc_criteria' is a field, then it assumes that this field is
+    a list of list of dictionaries. The length of the first list
+    determines how many possible criteria can be used to figure
+    out if a file should be used for processing and further which
+    files should be used if processing. If all relevant files can
+    be judged based on the first entry of this outer list, then
+    that first list will be used to determine the QC criteria by
+    which files will be judged. If one or more files has an undefined
+    QC value (null/nan) that is needed to judge the quality of the file,
+    then the second entry in the first list will be used to determine
+    quality. Generally the first entry will contain a list of measures,
+    some of which include manual QC that wont always be present, and
+    the second list serves as a backup in the case that manual QC is
+    missing.
     
     
-    html = add_prettier_background_to_html(html)
-    with open(output_html_path, 'w') as f:
-        f.write(html)
+
+    Example requirements_dict
+    -------------------------
+
+    The dictionary content below gives criteria for how to select T1 and
+    T2 images. Because both fields have the "num_to_keep" field set to 1,
+    up to 1 image will be included for each field in processing. The
+    "file_naming" entry says which phrases should or shouldnt be included
+    in the name of T1 and T2 images. The "qc_criteria" says how to judge
+    an images quality. The keys in the innermost dictionaries under
+    "qc_criteria" will correspond to column names in the subject's scans.tsv
+    file. The following entry means that "HBCD_compliant" should be "Yes":
+    
+        "HBCD_compliant" : ["Yes", "equals"]
         
-    return study_tracking_df
+    The following entry means that "QU_motion" should be less than 2:
+    
+        {"QU_motion" : [2, "less_than"]}
+        
+    The following entry means that brain_SNR should be more than -1000:
+    
+        {"brain_SNR" : [-1000, "greater_than"]}
+        
+    In some cases criteria may be set to be extremely inclusive. For example
+    the brain_SNR criteria will never say that an image should be excluded
+    (because brain_SNR will always be greater than or equal to zero), but
+    it will sometimes be used to decide which image is better when two or
+    more images will be considered for processing. In the case of "T1" below,
+    first "HBCD_compliant", then "QU_motion" then "aqc_motion", and then
+    "brain_SNR" will be used to determine which image is better. If one or
+    more of these measures are undefined for any of the images that match
+    the "T1" naming criteria, then the script will attempt to use the second
+    "qc_criteria" to judge files. In this case the two sets of criteria are
+    the same, except for the second set does not have "QU_motion" which is
+    a manually curated quality control measure that is often unavailable.
+    
+    {
+    "T1" : {"file_naming" : {"T1w.nii.gz" : true,
+            "rec-undistorted" : false,
+            "acq-svslocalizer" : false,
+            "acq-mrsLoc" : false,
+            "_QALAS.nii.gz" : false},
 
+            "qc_criteria" : [[{"HBCD_compliant" : ["Yes", "equals"]},
+                                {"QU_motion" : [2, "less_than"]},
+                                {"aqc_motion" : [10000, "less_than"]},
+                                {"brain_SNR" : [-1000, "greater_than"]}],
+                             [{"HBCD_compliant" : ["Yes", "equals"]},
+                                {"aqc_motion" : [10000, "less_than"]},
+                                {"brain_SNR" : [-1000, "greater_than"]}]],
+            "num_to_keep" : 1
+            },
+
+    "T2" : {"file_naming" : {"T2w.nii.gz" : true,
+                "rec-undistorted" : false,
+                "acq-svslocalizer" : false,
+                "acq-mrsLoc" : false,
+                "_QALAS.nii.gz" : false},
+
+                "qc_criteria" : [[{"HBCD_compliant" : ["Yes", "equals"]},
+                                    {"QU_motion" : [2, "less_than"]},
+                                    {"aqc_motion" : [10000, "less_than"]},
+                                    {"brain_SNR" : [-1000, "greater_than"]}],
+                                 [{"HBCD_compliant" : ["Yes", "equals"]},
+                                    {"aqc_motion" : [10000, "less_than"]},
+                                    {"brain_SNR" : [-1000, "greater_than"]}]],
+
+                "num_to_keep" : 1
+                },
+
+    "sessions" : {"file_naming" : {"sessions.tsv" : true}}
+    }
+    
+    Parameters
+    ----------
+    subject_id : str
+        Subject whose BIDS requirements are being checked.
+        (i.e. sub-01)
+    session_files : list of dicts
+        A list of file info generated from boto3 that contains
+        all files for a subject that are associated with the
+        current session (i.e. ses-V02). This often also includes
+        session agnostic files like the sessions.tsv file that
+        some pipelines require for processing. See grab_subject_file_info
+        and grab_session_specific_file_info for more details.
+    requirements_dict : dict
+        Dictionary listing possible requirements that must be
+        satisfied for a file to be included in processing.
+        (See example above)
+    qc_df : None or pandas dataframe
+        The scans.tsv file for the current session loaded
+        as a pandas dataframe. This will be used for any
+        inforporation of qc information.
+    bucket : str, default 'hbcd-pilot'
+        The name of the bucket to query for files
+    prefix : str, default 'assembly_bids'
+        The prefix to restrict the files returned by
+    bids_bucket_config : bool or str, default False
+        If bids_bucket_config is a string, this
+        will be used as a config file to identify
+        the s3 credentials... otherwise the default
+        location will be used
+    session : str
+        The session being used for processing (i.e. ses-V02)
+    session_agnostic_files : list of str, default ['sessions.tsv']
+        List of files from session_files that are not actually session
+        specific
+    associated_files_dict : None, or dict, default None
+        A dictionary that lets you find misc. files that
+        are associated with imaging files. For example
+        json files, sbref files, bval, bvec files, etc.
+    verbose : bool, default False
+        Print more details
+
+    
+    Returns
+    -------
+    list
+        List of file paths that satisfy the requirements
+        and that will be used for processing.
+    dict
+        Dictionary that S3 information for the different
+        files that have been selected for processing
+        
+    '''
+    
+    output_file_list = []
+    metadata_dict = {}
+    for i, parent_requirement in enumerate(requirements_dict.keys()):
+        #Check if the current requirement has any associated QC criteria
+        if verbose:
+            print('Parent Requirement: {}'.format(parent_requirement))
+        if 'qc_criteria' in requirements_dict[parent_requirement]:
+            num_iters_allowed = len(requirements_dict[parent_requirement]['qc_criteria'])
+            qc_index = 0
+        else:
+            num_iters_allowed = 1
+            qc_index = None
+            
+        #The following loop to find files is necessary because there may
+        #be cases where there is different QC information available for
+        #different subjects, and we want to process as many subjects as
+        #possible using manual QC measures when they are available, but
+        #in absence of manual QC measures we may use automated QC measures.
+        continue_loop = True
+        while continue_loop:
+            #if 1:
+            try:
+                partial_file_list, partial_metadata_dict = grab_required_bids_files_inner(session_files, requirements_dict[parent_requirement], 
+                                                 qc_index = qc_index, qc_df = qc_df, 
+                                                 session_agnostic_files = session_agnostic_files, verbose = verbose)
+                continue_loop = False
+            #if 1:
+            except Exception as error:
+                
+                #I don't think this will ever occur
+                if type(qc_index) == type(None):
+                    raise ValueError('Error: No QC expected for current pipeline, but grab_bids_files_v2_inner still failed.')
+                #If there are more QC Criteria that can be used
+                #then try the next one (since previous one already failed)
+                else:
+                    qc_index += 1
+                    if qc_index == num_iters_allowed:
+                        print('   No QC list was properly evaluated for this subject:')
+                        print(error)
+                        continue_loop = False
+           
+        #This should update be only be made once per parent requirement
+        #after the while loop finishes
+        output_file_list = output_file_list + partial_file_list
+        metadata_dict.update(partial_metadata_dict)
+            
+
+        
+    #Also find all the various files that are associated with the requirements
+    output_file_list, partial_metadata_dict = find_associated_files(subject_id, associated_files_dict, output_file_list,
+                              session_files, prefix)
+    metadata_dict.update(partial_metadata_dict)
+
+    #Reformat the date information
+    for a in metadata_dict.keys():
+        for b in metadata_dict[a].keys():
+             if isinstance(metadata_dict[a][b], datetime.datetime):
+                metadata_dict[a][b] = metadata_dict[a][b].isoformat()
+                
+    # Do some cosmetics to change paths to be relative to subject level
+    full_prefix = os.path.join(prefix, subject_id)
+    prefix_offset = len(full_prefix.split('/'))
+    metadata_dict_clean = {}
+    for temp_key in metadata_dict.keys():
+        metadata_dict_clean['/'.join(temp_key.split('/')[prefix_offset:])] = metadata_dict[temp_key]
+    output_file_list_clean = []
+    for temp_file in output_file_list:
+        output_file_list_clean.append('/'.join(temp_file.split('/')[prefix_offset:]))
+                
+    return output_file_list_clean, metadata_dict_clean
+
+def grab_required_bids_files_inner(session_files, partial_requirements_dict, qc_index = None, qc_df = None, 
+                                         session_agnostic_files = ['sessions.tsv'], verbose = False):
+    #This function looks for session files that have the right name for processing
+    #and pass the QC Criteria (if there are any available). The reason why this
+    #is a standalone function is so that different qc_indices can be used, signifying
+    #different qc criteria that will be referred to based on what qc measures are
+    #available for a given subject.
+    
+    
+    #Grab the current QC criteria. Only necessary if QC Criteria
+    #is in the partial_requirements_dict. If there are more than
+    #one QC Criteria (i.e. there are backup QC criteria), then 
+    #the qc_index will say which one is currently being referenced
+    if verbose:
+        print('Current QC Index: {}'.format(qc_index))
+    if 'qc_criteria' in partial_requirements_dict:
+        if type(qc_index) == type(None):
+            temp_qc_criteria_group = partial_requirements_dict['qc_criteria']
+        else:
+            temp_qc_criteria_group = partial_requirements_dict['qc_criteria'][qc_index]
+    
+    temp_requirement_file_list = []
+    temp_requirements_metadata_list = []
+    child_requirements = partial_requirements_dict['file_naming']
+    for j, temp_file in enumerate(session_files):
+        child_requirements_satisfied = 0
+        for child_requirement in child_requirements.keys():
+            if (child_requirement in temp_file['Key']) == child_requirements[child_requirement]:
+                child_requirements_satisfied += 1
+            else:
+                break
+        if child_requirements_satisfied == len(child_requirements.keys()):
+            temp_requirement_file_list.append(temp_file['Key'])
+            temp_requirements_metadata_list.append(temp_file)
+
+    counter = 0
+    partial_output_file_list = []
+    partial_output_file_list_qc = []
+    partial_metadata_dict = {}
+    for j, temp_file in enumerate(temp_requirement_file_list):
+        qc_values = []
+        requirement_disqualified = 0
+        if ('qc_criteria' in partial_requirements_dict) and (type(qc_df) != type(None)):
+            partial_df = qc_df[qc_df['filename'].str.contains(temp_file.split('/')[-1])]
+            if len(partial_df) == 0:
+                is_ses_agnostic = 0
+                for temp_ses_agnostic in session_agnostic_files:
+                    if temp_ses_agnostic in temp_file:
+                        is_ses_agnostic = 1
+                if is_ses_agnostic == 0:
+                    print('   Exiting processing attempt: No QC info for {}'.format(temp_file))
+                    return None, None
+
+
+            #Iterate through each QC requirement (the requirements are
+            #stored as a list of dictionaries, each with one key/value pair)
+            if verbose:
+                print('File being investigated: {}'.format(temp_file.split('/')[-1]))
+            if verbose:
+                print('   temp_qc_criteria_group: {}'.format(temp_qc_criteria_group))
+            for temp_qc_criteria in temp_qc_criteria_group:
+                if verbose:
+                    print('   temp_qc_criteria: {}'.format(temp_qc_criteria))
+                for temp_dict_key in temp_qc_criteria:
+                    
+                    #Check if there is a null value for the current QC criteria.
+                    #If there is a null value here, we will want to error out so
+                    #the next grouping of QC criteria can be used if one is available.
+                    #print('temp_dict: {}'.format(temp_dict))
+                    #temp_dict_key = list(temp_dict.keys())[0]
+                    if pd.isnull(partial_df[temp_dict_key].values[0]):
+                        if verbose:
+                            print('   SKIPPING CRITERIA BECAUSE NULL WAS IDENTIFIED: {}'.format(partial_df[temp_dict_key].values[0]))
+                        raise ValueError('    QC info not available for {}: {} ({})'.format(temp_dict_key, partial_df[temp_dict_key].values[0], temp_file))
+                    
+                    if verbose:
+                        print('     is {} {} {} : {}'.format(partial_df[temp_dict_key].values[0], temp_qc_criteria[temp_dict_key][1], temp_qc_criteria[temp_dict_key][0], temp_file))
+                    if make_comparison(partial_df[temp_dict_key].values[0], temp_qc_criteria[temp_dict_key][1], temp_qc_criteria[temp_dict_key][0]):
+                        qc_values.append(partial_df[temp_dict_key].values[0])
+                    else:
+                        requirement_disqualified = 1
+                    
+
+        #I think the code below should work whether or not QC information is present
+        if requirement_disqualified == 0:
+            if 'num_to_keep' not in partial_requirements_dict.keys():
+                partial_output_file_list.append(temp_file)
+                partial_output_file_list_qc.append(qc_values)
+                partial_metadata_dict[temp_file] = temp_requirements_metadata_list[j]
+            elif partial_requirements_dict['num_to_keep'] > counter:
+                partial_output_file_list.append(temp_file)
+                partial_output_file_list_qc.append(qc_values)
+                partial_metadata_dict[temp_file] = temp_requirements_metadata_list[j]
+                counter += 1
+            else:                
+                
+                if verbose:
+                    print('Partial output file list qc: {}'.format(partial_output_file_list_qc))
+                #Check which of the existing files has the worst QC values
+                worst_existing_file_qc = partial_output_file_list_qc[0]
+                worst_existing_file_qc_index = 0
+                for qc_ind, temp_qc_partial in enumerate(partial_output_file_list_qc):
+                    for temp_qc_item in range(len(partial_output_file_list_qc[0])):
+                        if verbose:
+                            print('temp_qc_partial {}'.format(temp_qc_partial))
+                            print('qc_ind {}'.format(qc_ind))
+                        #If QC measure is worse in the current file, then remark this as the worst file
+                        #if temp_qc_partial[temp_qc_item] > worst_existing_file_qc[temp_qc_item]:
+                        temp_inner_qc_criteria_dict = temp_qc_criteria_group[temp_qc_item]
+                        temp_operator = list(temp_inner_qc_criteria_dict.values())[0][1]
+                        if make_comparison(worst_existing_file_qc[temp_qc_item], temp_operator, temp_qc_partial[temp_qc_item]): #Ordering of make_comparison is swapped here to highlight the worst
+                            #If QC measure is the same in the current file, check the next item
+                            if temp_qc_partial[temp_qc_item] == worst_existing_file_qc[temp_qc_item]:
+                                continue
+                            #If QC measure is better in the current file, move on to the next file
+                            else:
+                                worst_existing_file_qc_index = qc_ind
+                                worst_existing_file_qc = partial_output_file_list_qc[qc_ind]
+                                break
+                                
+                if verbose:
+                    print('   Worst existing file qc: {}'.format(worst_existing_file_qc))
+                    print('   Worst existing file qc index: {}'.format(worst_existing_file_qc_index))
+
+                #See if the current file is better/worse than the worst file
+                for temp_qc_item in range(len(worst_existing_file_qc)):
+
+                    #If new file is better, then update the file list with the
+                    #current file
+                    temp_inner_qc_criteria_dict = temp_qc_criteria_group[temp_qc_item]
+                    temp_operator = list(temp_inner_qc_criteria_dict.values())[0][1]
+                    #if worst_existing_file_qc[temp_qc_item] > qc_values[temp_qc_item]:
+                    if verbose:
+                        print('is {} {} {}'.format(qc_values[temp_qc_item], temp_operator, worst_existing_file_qc[temp_qc_item]))
+                        
+                    #Skip the comparison if the measure is boolean. If both files are considered, then they both will
+                    #have already passed this.
+                    if type(qc_values[temp_qc_item]) == bool:
+                        continue
+                    #If there is a tie, then check the next measure. Eventually this will lead to one file being
+                    #arbritrarily being chosen based on file name if there are ties all the way down (this is fine)
+                    elif qc_values[temp_qc_item] == worst_existing_file_qc[temp_qc_item]:
+                        continue
+                    elif make_comparison(qc_values[temp_qc_item], temp_operator, worst_existing_file_qc[temp_qc_item]):
+                        del partial_metadata_dict[partial_output_file_list[worst_existing_file_qc_index]]
+                        partial_metadata_dict[temp_file] = temp_requirements_metadata_list[j]
+                        partial_output_file_list[worst_existing_file_qc_index] = temp_file
+                        partial_output_file_list_qc[worst_existing_file_qc_index] = qc_values
+                        break
+                    #If new file is worse, then move on and ignore the current file
+                    #elif worst_existing_file_qc[temp_qc_item] > qc_values[temp_qc_item]:
+                    else:
+                        break
+
+
+    return partial_output_file_list, partial_metadata_dict
+
+def check_all_files_old_enough(metadata_dict, minimum_file_age_days, 
+                               file_patterns_to_ignore = ['sessions.tsv'],
+                               verbose = False):
+    '''
+    If all files in metadata_dict have timestamp of at least minimum_file_age_days
+    ago, return True, otherwise return False. Allow files to be excluded in this
+    age comparison through the file_patterns_to_ignore list.
+    '''
+    
+    
+    today = date.today()
+    
+    for temp_file in metadata_dict.keys():
+        skip_file = False
+        for temp_pattern in file_patterns_to_ignore:
+            if metadata_dict[temp_file]['Key'].endswith(temp_pattern):
+                skip_file = True
+                break
+        
+        if skip_file == False:
+            file_upload_day = date.fromisoformat(metadata_dict[temp_file]['LastModified'].split('T')[0])
+            day_difference = today - file_upload_day
+            if verbose:
+                print('{} Uploaded {} days ago'.format(temp_file.split('/')[-1], day_difference.days))
+            if day_difference.days < minimum_file_age_days:
+                return False
+        
+    return True
+
+def load_requirements_infos(pipeline_name):
+
+    #Load the "comprehensive_processing_prerequisites" json files that are the same for each subject
+    #These files at least say which files are required for processing, and may also specify other
+    #requirements such as the number of files required for processing or whether any QC requirements
+    #need to be met for a file to be included in processing
+    requirements_files = []
+    comp_proc_recs_dir = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'comprehensive_processing_prerequisites')
+    for filename in os.listdir(comp_proc_recs_dir):
+        # Use regular expression to match pipeline name with or without underscore and number
+        match = re.match(rf"^{pipeline_name}(?:_[0-9]+)?\.json$", filename)
+        if match:
+            requirements_files.append(os.path.join(comp_proc_recs_dir, filename))
+
+    requirements_dicts = []
+    for temp_requirement_file in requirements_files:
+        with open(temp_requirement_file, 'r') as f:
+            requirements_dicts.append(json.load(f))    
+    
+    #Rearange the requirements files dictionaries into one dictionary
+    #that has all the possible file types that we will want to grab.
+    file_selection_dict = {}
+    for temp_dict in requirements_dicts:
+        for temp_key in temp_dict.keys():
+            if temp_key in file_selection_dict.keys():
+                if temp_dict[temp_key] != file_selection_dict[temp_key]:
+                    raise ValueError('Error: {} has conflicting requirements for {}'.format(pipeline_name, temp_key))
+            else:
+                file_selection_dict[temp_key] = temp_dict[temp_key]
+    
+    return requirements_dicts, file_selection_dict
+
+def download_cbrain_misc_file(derivative_bucket_config, derivatives_bucket_prefix,
+                              subject, bucket, pipeline_name, output_folder,
+                              ending = 'UMNProcSubmission.json'):
+    '''Download json from cbrain_misc folder
+    
+    Assumes there will be a file in the derivatives bucket with
+    the naming convention:
+    
+    {bucket}/{derivatives_bucket_prefix}/cbrain_misc/{subject}_{pipeline_name}_{ending}
+        
+    Returns
+    -------
+    
+    Path to downloaded json file if download was successful,
+    otherwise returns None
+        
+    '''
+
+    client = create_boto3_client(s3_config = derivative_bucket_config)
+    file_to_download = os.path.join(derivatives_bucket_prefix, 'cbrain_misc', '{}_{}_{}'.format(subject, pipeline_name, ending))
+    downloaded_file = os.path.join(output_folder, file_to_download.split('/')[-1])
+    try:
+        client.download_file(bucket, file_to_download, downloaded_file)
+    except:
+        return None
+            
+    return downloaded_file
+
+def check_if_ancestor_file_selection_is_same(subject_id, session_files, ancestor_pipelines_file_selection_dict, qc_df = None,
+                                             bids_bucket = None, bids_prefix = None, bids_bucket_config = None,
+                                             session = None, session_agnostic_files = ['sessions.tsv'], associated_files_dict = None,
+                                             verbose = False, derivatives_bucket_config = None, derivatives_bucket = None,
+                                             derivatives_bucket_prefix = None, logs_directory = None):
+    
+    '''
+    Function that assumes there will be a directory named "cbrain_misc"
+    in the derivatives bucket, underneath the derivatives_bucket_prefix.
+    The function then looks for log files that were created when a subject
+    was previously processed with an "ancestor" pipeline. The function then
+    loads the json log file to check if the files that would be selected
+    for processing today (using current QC criteria) are the same as the
+    files that were previously selected for processing. This includes checking
+    the file names and file sizes based on s3 metadata. If there is overlap for
+    all pipelines, the function returns true otherwise the function returns false.
+    
+    All inputs used for this pipeline are also used in various other functions
+    in this file...
+    
+    '''
+    
+    
+    for temp_pipeline in ancestor_pipelines_file_selection_dict.keys():
+        temp_reqs = ancestor_pipelines_file_selection_dict[temp_pipeline]
+        _, current_file_metadata = grab_required_bids_files_v2(subject_id, session_files, temp_reqs, qc_df = qc_df, bucket = bids_bucket,
+                                                                                prefix = bids_prefix, bids_bucket_config = bids_bucket_config, session = session, 
+                                                                                session_agnostic_files = session_agnostic_files, associated_files_dict = associated_files_dict,
+                                                                                verbose = verbose)
+
+        json_path = download_cbrain_misc_file(derivatives_bucket_config, derivatives_bucket_prefix,
+                              subject_id, derivatives_bucket, temp_pipeline, logs_directory,
+                              ending = 'UMNProcSubmission.json')
+        
+        if type(json_path) == type(None):
+            print('   Warning: no ancestor cbrain_misc was identified. Assuming subject should not be processed.')
+            return False
+        else:
+            with open(json_path, 'r') as f:
+                json_content = json.load(f)
+            os.remove(json_path)
+            original_s3_metadata = json_content['s3_metadata']
+            original_keys_sorted = list(original_s3_metadata.keys())
+            original_keys_sorted.sort()
+            current_keys_sorted = list(current_file_metadata.keys())
+            current_keys_sorted.sort()
+            if original_keys_sorted != current_keys_sorted:
+                print('   Files that would be selected for {} processing today are different than what is found in the processing logs. Delete previous results and reprocess if you want to run the current pipeline.'.format(temp_pipeline))
+                print('   Files that were previously used: {}'.format(original_keys_sorted))
+                print('   Files that would be selected today: {}'.format(current_keys_sorted))
+                
+                return False
+            else:
+                for temp_file in original_s3_metadata.keys():
+                    skip_file = False
+                    for temp_agnostic in session_agnostic_files:
+                        if temp_file.endswith(temp_agnostic):
+                            skip_file = True
+                            break #dont evaluate the size of session agnostic files
+                    if skip_file == False:
+                        if original_s3_metadata[temp_file]['Size'] != current_file_metadata[temp_file]['Size']:
+                            print('Chosen file {} has different size ({} vs. now {}) when compared to when {} was ran.'.format(temp_file.split('/')[-1], original_s3_metadata[temp_file]['Size'], current_file_metadata[temp_file]['Size'], temp_pipeline))
+                            return False
+                        
+        
+    
+    return True
 
 def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_ids, cbrain_api_token,
                         group_id = '10367', user_id = '4022', bids_bucket_config = '/some/path',
@@ -1884,7 +2448,9 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                         derivatives_bucket_config = '/some/path', derivatives_bucket = 'hbcd-pilot',
                         derivatives_bucket_prefix = 'derivatives', bids_data_provider_id = 710,
                         derivatives_data_provider_id = 0, session_qc_files_root_dir = None, ses_name = '',
-                        rerun_level = 1, logs_directory = None, logs_prefix = 'cbrain_misc', session_dp_dict = None):
+                        rerun_level = 1, logs_directory = None, logs_prefix = 'cbrain_misc', session_dp_dict = None,
+                        session_agnostic_files = ['sessions.tsv'], check_ancestor_pipelines = True,
+                        verbose = False, minimum_file_age_days = 14):
     
     '''Function to manage processing of data using CBRAIN
 
@@ -1951,46 +2517,40 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         tool_config_dict = json.load(f)
     tool_config_id = str(tool_config_dict[pipeline_name])
 
+    #See if the current pipeline has any 'ancestor pipelines', if so
+    #we will use this list to be sure that the files that were previously
+    #selected when those processing pipelines were ran are still the same
+    #files that would be chosen if those pipelines were ran again. If this
+    #is not the case, then we will want to pause on processing the current
+    #subject until the ancestor pipelines are rerun.
+    ancestor_pipeline_file = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'ancestor_pipelines.json')
+    with open(ancestor_pipeline_file, 'r') as f:
+        ancestors_dict = json.load(f)
+    ancestor_pipelines = ancestors_dict[pipeline_name]
+
     #Load the associated_files dictionary, which tells you which files
     #are associated with specific requirements (i.e. jsons for nii.gz, sbrefs, etc.)
     associated_files_file = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'associated_files.json')
     with open(associated_files_file, 'r') as f:
         associated_files_dict = json.load(f)    
     
-    #Load the "comprehensive_processing_prerequisites" json files that are the same for each subject
-    #These files at least say which files are required for processing, and may also specify other
-    #requirements such as the number of files required for processing or whether any QC requirements
-    #need to be met for a file to be included in processing
-    #requirements_files = glob.glob(os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'comprehensive_processing_prerequisites','{}*.json'.format(pipeline_name)))
-    requirements_files = []
-    comp_proc_recs_dir = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'comprehensive_processing_prerequisites')
-    for filename in os.listdir(comp_proc_recs_dir):
-        # Use regular expression to match pipeline name with or without underscore and number
-        match = re.match(rf"^{pipeline_name}(?:_[0-9]+)?\.json$", filename)
-        if match:
-            requirements_files.append(os.path.join(comp_proc_recs_dir, filename))
-
-    requirements_dicts = []
-    for temp_requirement_file in requirements_files:
-        with open(temp_requirement_file, 'r') as f:
-            requirements_dicts.append(json.load(f))
+    #Load the processing prerequisites for the current pipeline
+    requirements_dicts, file_selection_dict = load_requirements_infos(pipeline_name)
     print('{} requirements dictionaries: {}'.format(pipeline_name, requirements_dicts))
 
-    #Rearange the requirements files dictionaries into one dictionary
-    #that has all the possible file types that we will want to grab.
-    file_selection_dict = {}
-    for temp_dict in requirements_dicts:
-        for temp_key in temp_dict.keys():
-            if temp_key in file_selection_dict.keys():
-                if temp_dict[temp_key] != file_selection_dict[temp_key]:
-                    raise ValueError('Error: {} has conflicting requirements for {}'.format(pipeline_name, temp_key))
-            else:
-                file_selection_dict[temp_key] = temp_dict[temp_key]
-    
     #If any of the requirements are dependent on QC info, return True
     #otherwise return false and allow processing even when QC file is missing
     qc_info_required = is_qc_info_required(file_selection_dict)
     print("QC info required: {}".format(qc_info_required))
+
+    #Load the processing prerequisites for the ancestor pipelines
+    #this will be used to check if the files that were previously
+    #selected for processing are still the same files that would
+    #be selected if the ancestor pipelines were ran again
+    ancestor_pipelines_file_selection_dict = {}
+    for temp_ancestor in ancestor_pipelines:
+        ancestor_pipelines_file_selection_dict[temp_ancestor] = load_requirements_infos(temp_ancestor)[1]
+    
 
     #Path to external requirements file for the given pipeline      
     external_requirements_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'external_requirements', '{}.json'.format(pipeline_name))
@@ -2042,11 +2602,11 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         subject_processing_details['derivatives_found'] = "Not Evaluated"
         subject_processing_details['CBRAIN_Status'] = "Not Evaluated"
         subject_processing_details['scans_tsv_present'] = "Not Evaluated"
+        subject_processing_details['Ancestor_Files'] = "Not Evaluated"
         
         #Be sure that the current subject doesn't have existing output before starting processing
-        if check_if_derivatives_exist(temp_subject, pipeline_name,
-                                        bucket = derivatives_bucket, prefix = derivatives_bucket_prefix,
-                                        derivatives_bucket_config = derivatives_bucket_config):
+        subject_derivatives_prefix = os.path.join(derivatives_bucket_prefix, pipeline_name, temp_subject) #derivatives_bucket_prefix currently includes session info
+        if file_exists_under_prefix(derivatives_bucket, subject_derivatives_prefix, derivatives_bucket_config):
             subject_processing_details['derivatives_found'] = True
             for temp_req in file_selection_dict.keys():
                 subject_processing_details[temp_req] = 'Already Processed'
@@ -2088,28 +2648,51 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                     subj_ses_qc_file = None
                 else:
                     subj_ses_qc_file = pd.read_csv(subj_ses_qc_file_path, delimiter = '\t')
+                    os.remove(subj_ses_qc_file_path)
         else:
             subj_ses_qc_file = None
+
+
+        #Grab a list of BIDS associated files for this subject in S3
+        try:
+            subject_files = grab_subject_file_info(temp_subject, bids_bucket_config, bucket = bids_bucket, prefix = bids_bucket_prefix)
+        except Exception as error:
+            print(error)
+            raise RuntimeError('Error: unable to grab file names for S3 for current subject. This likely means S3 access is having issues.')
+        if len(subject_files) == 0:
+            print('   Warning: No S3 files found for subject')
+
+        #Reduce the files to those that are relevant for
+        #the current session being processed
+        session_level = len(bids_bucket_prefix.split('/')) + 1 
+        session_files = grab_session_specific_file_info(subject_files, ses_name,
+                            session_agnostic_files = session_agnostic_files,
+                            session_level = session_level)
+        if len(session_files) == 0:
+            print('   No files found for subject/session combo')
+            continue
 
 
         #First run preliminary check for requirements that is only used
         #for the purpose of populating the processing details spreadsheet.
         #Later requirements check will actually be used to determine if 
         #processing will be attempted.
-        temp_req_output, req_tracking_dict = check_bids_requirements(temp_subject, file_selection_dict,
-                                                    bucket = bids_bucket, prefix = bids_bucket_prefix,
-                                                    bids_bucket_config = bids_bucket_config,
-                                                    session = ses_name, qc_df = subj_ses_qc_file)
+        temp_req_output, req_tracking_dict = check_bids_requirements_v2(temp_subject, session_files, file_selection_dict,
+                               qc_df = subj_ses_qc_file, bucket = bids_bucket, prefix = bids_bucket_prefix,
+                               bids_bucket_config = bids_bucket_config, session = ses_name,
+                               session_agnostic_files = session_agnostic_files,
+                               verbose = verbose)
         subject_processing_details.update(req_tracking_dict)
             
         #Check that the subject has requirements satisfiying at least one pipeline specific json in the processing_prerequisites folder
         requirements_satisfied = 0
         none_found = 0
         for temp_requirement in requirements_dicts:
-            temp_req_output, _ = check_bids_requirements(temp_subject, temp_requirement,
-                                                                bucket = bids_bucket, prefix = bids_bucket_prefix,
-                                                                bids_bucket_config = bids_bucket_config,
-                                                                session = ses_name, qc_df = subj_ses_qc_file)
+            temp_req_output, _ = check_bids_requirements_v2(temp_subject, session_files, temp_requirement,
+                        qc_df = subj_ses_qc_file, bucket = bids_bucket, prefix = bids_bucket_prefix,
+                        bids_bucket_config = bids_bucket_config, session = ses_name,
+                        session_agnostic_files = session_agnostic_files,
+                        verbose = verbose)
             #If return == None, this is because some QC info was expected but is missing
             if type(temp_req_output) == type(None):
                 none_found = 1
@@ -2121,10 +2704,6 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             print('    Requirements not satisfied')
             subject_processing_details['derivatives_found'] = "No (Missing BIDS Reqs)"
             subject_processing_details['CBRAIN_Status'] = "No Proc. (Missing BIDS Reqs)"
-            try:
-                os.remove(subj_ses_qc_file_path)
-            except:
-                pass
             continue
             
         #Check that the external requirements are satisfied for the subject (these are pipeline inputs that will be files/file collections
@@ -2143,23 +2722,54 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
             print('    Missing external requirements')
             subject_processing_details['derivatives_found'] = "No (Missing Derived Reqs)"
             subject_processing_details['CBRAIN_Status'] = "No Proc. (Missing Derived Reqs)"
-            try:
-                os.remove(subj_ses_qc_file_path)
-            except:
-                pass
             continue #skip processing if external requirements aren't found
             
         #Grab files for the subject according to pipeline specific jsons in processing_file_numbers and processing_file_selection folders
-        subject_files_list, metadata_dict = grab_required_bids_files(temp_subject, file_selection_dict, qc_df = subj_ses_qc_file,
-                                                                 bucket = bids_bucket, prefix = bids_bucket_prefix,
-                                                                 bids_bucket_config = bids_bucket_config,
-                                                                 session = ses_name, associated_files_dict = associated_files_dict)
-        try:
-            os.remove(subj_ses_qc_file_path) #dont need the scans.tsv file anymore at this point
-        except:
-            pass
+        subject_files_list, metadata_dict = grab_required_bids_files_v2(temp_subject, session_files, file_selection_dict,
+                                                                        qc_df = subj_ses_qc_file, bucket = bids_bucket,
+                                                                        prefix = bids_bucket_prefix,
+                                                                        bids_bucket_config = bids_bucket_config,
+                                                                        session = ses_name, session_agnostic_files = session_agnostic_files,
+                                                                        associated_files_dict = associated_files_dict,
+                                                                        verbose = False)
+        
+        #Check if all files are old enough for processing. Generally we will
+        #want to wait several days before processing to be sure that there is
+        #time for the QC information to get populated
+        files_old_enough = check_all_files_old_enough(metadata_dict, minimum_file_age_days, 
+                               file_patterns_to_ignore = session_agnostic_files,
+                               verbose = False)
+        if files_old_enough == False:
+            print('    Files not old enough for processing')
+            subject_processing_details['derivatives_found'] = "No (Files Not Old Enough)"
+            subject_processing_details['CBRAIN_Status'] = "No Proc. (Files Not Old Enough)"
+            continue
+        
+        #Go through all "ancestor" processing requirements, and ensure
+        #that the files that would be selected for processing today are
+        #the same as the files that were selected when the ancestor
+        #pipelines were ran. If this is not the case, then processing
+        #of this subject will be paused until the ancestor pipelines are rerun.
+        if check_ancestor_pipelines:
+            if len(ancestor_pipelines) > 0:
+                are_ancestors_the_same = check_if_ancestor_file_selection_is_same(temp_subject, session_files, ancestor_pipelines_file_selection_dict, qc_df = subj_ses_qc_file,
+                                                            bids_bucket = bids_bucket, bids_prefix = bids_bucket_prefix, bids_bucket_config = bids_bucket_config,
+                                                            session = ses_name, session_agnostic_files = session_agnostic_files, associated_files_dict = associated_files_dict,
+                                                            verbose = verbose, derivatives_bucket_config = derivatives_bucket_config, derivatives_bucket = derivatives_bucket,
+                                                            derivatives_bucket_prefix = derivatives_bucket_prefix, logs_directory = logs_directory)
+                if are_ancestors_the_same == False:
+                    print('    Pausing processing until ancestor pipelines are rerun')
+                    subject_processing_details['derivatives_found'] = "No (Ancestor Files Different)"
+                    subject_processing_details['CBRAIN_Status'] = "No Proc. (Ancestor Files Different)"
+                    subject_processing_details['Ancestor_Files'] = 'Different'
+                    continue
+                else:
+                    subject_processing_details['Ancestor_Files'] = 'Same'
 
-        if type(subject_files_list) == type(None):
+            
+        
+
+        if type(subject_files_list) == type(None): #Guessing this never happens?
             print('    scans.tsv missing one or more acquisitions. Skipping processing.')
             continue
 
@@ -2171,11 +2781,6 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         final_subjects_names_for_proc.append(temp_subject)
         print('    Processing will be attempted')
         subject_processing_details['CBRAIN_Status'] = 'Initiating Processing'
-
-        #print('all_to_keep {}'.format(all_to_keep_lists))
-        #print('subject_external_req {}'.format(subject_external_requirements_list))
-        #print('subject_ids {}'.format(final_subjects_ids_for_proc))
-        #print('subject_names {}'.format(final_subjects_names_for_proc))
 
     #Update the study processing details dict for the last subject
     if 'subject_processing_details' in locals():
@@ -2213,11 +2818,10 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
 
     
     study_tracking_df = pd.DataFrame.from_dict(study_processing_details)
-    #study_tracking_df.fillna('Not Evaluated', inplace=True)
     if type(logs_directory) != type(None):
         log_csv_name = os.path.join(logs_directory, 'processing_details_{}_{}.csv'.format(pipeline_name, ses_label))
         log_html_name = os.path.join(logs_directory, 'processing_details_{}_{}.html'.format(pipeline_name, ses_label))
-        study_tracking_df = reformat_df_and_produce_proc_html(study_tracking_df, pipeline_name, ses_label, log_html_name, file_selection_dict)
+        study_tracking_df = html_tools.reformat_df_and_produce_proc_html(study_tracking_df, pipeline_name, ses_label, log_html_name, file_selection_dict)
         study_tracking_df.to_csv(log_csv_name, index = False)
 
     
