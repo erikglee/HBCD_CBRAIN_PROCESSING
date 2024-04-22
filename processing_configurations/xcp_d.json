@@ -4,11 +4,15 @@
     "input_type": "nibabies",
     "cifti": "true",
     "despike": "true",
-    "dcan_qc": "true",
     "warp_surfaces": "true",
     "fd_thresh": "0.3",
     "head_radius": "auto",
     "combineruns": "true",
-    "verbose": "true"
-
+    "verbose": "true",
+    "smoothing": "6",
+    "lower_bpf" : "0.01",
+    "upper_bpf" : "0.08",
+    "bpf_order" : "2",
+    "nuissance_regressors": "36P",
+    "min_time" : "210"
 }
