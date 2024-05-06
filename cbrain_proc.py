@@ -16,6 +16,7 @@ import base64
 from io import BytesIO
 import matplotlib.pyplot as plt
 import html_tools
+import time
 
 
 
@@ -2795,15 +2796,29 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     for i, temp_subject in enumerate(final_subjects_ids_for_proc):  
         print('Processing {} with {} via API'.format(final_subjects_names_for_proc[i], pipeline_name))
 
-        #Run "mark as newer" to be sure the latest version of the subject data
-        #is in the local CBRAIN cache once processing begins
-        for temp_key in subject_external_requirements_list[i].keys():
-            cbrain_mark_as_newer(subject_external_requirements_list[i][temp_key], cbrain_api_token)                
 
-        #Launch Processing
-        status, json_for_logging = launch_task_concise_dict(pipeline_name, subject_external_requirements_list[i], cbrain_api_token, data_provider_id = derivatives_data_provider_id,
-                                    group_id = group_id, user_id = user_id, task_description = '{} via API'.format(final_subjects_names_for_proc[i]),
-                                    all_to_keep = all_to_keep_lists[i], session_label = ses_label)
+        #Run "mark as newer" to be sure the latest version of the subject data
+        #is in the local CBRAIN cache once processing begins##################
+        try:
+            for temp_key in subject_external_requirements_list[i].keys():
+                cbrain_mark_as_newer(subject_external_requirements_list[i][temp_key], cbrain_api_token)                
+
+            #Launch Processing
+            status, json_for_logging = launch_task_concise_dict(pipeline_name, subject_external_requirements_list[i], cbrain_api_token, data_provider_id = derivatives_data_provider_id,
+                                        group_id = group_id, user_id = user_id, task_description = '{} via API'.format(final_subjects_names_for_proc[i]),
+                                        all_to_keep = all_to_keep_lists[i], session_label = ses_label)
+        except:
+            print('Error encountered while trying to submit job for processing. This is likely a networking issue. Will try again in 5 seconds.')
+            time.sleep(5) #wait 5 seconds and try again
+            for temp_key in subject_external_requirements_list[i].keys():
+                cbrain_mark_as_newer(subject_external_requirements_list[i][temp_key], cbrain_api_token)                
+
+            #Launch Processing
+            status, json_for_logging = launch_task_concise_dict(pipeline_name, subject_external_requirements_list[i], cbrain_api_token, data_provider_id = derivatives_data_provider_id,
+                                        group_id = group_id, user_id = user_id, task_description = '{} via API'.format(final_subjects_names_for_proc[i]),
+                                        all_to_keep = all_to_keep_lists[i], session_label = ses_label)
+        #######################################################################
+        
         json_for_logging['s3_metadata'] = metadata_dicts_list[i]
         if status == False:
             raise ValueError('Error CBRAIN processing tasked was not submitted for {}. Issue must be resolved for processing to continue.'.format(final_subjects_names_for_proc[i]))
