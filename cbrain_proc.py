@@ -2448,64 +2448,151 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
                         bids_bucket = 'hbcd-pilot', bids_bucket_prefix = 'assembly_bids',
                         derivatives_bucket_config = '/some/path', derivatives_bucket = 'hbcd-pilot',
                         derivatives_bucket_prefix = 'derivatives', bids_data_provider_id = 710,
-                        derivatives_data_provider_id = 0, session_qc_files_root_dir = None, ses_name = '',
+                        derivatives_data_provider_id = 0, ses_name = '',
                         rerun_level = 1, logs_directory = None, logs_prefix = 'cbrain_misc', session_dp_dict = None,
                         session_agnostic_files = ['sessions.tsv'], check_ancestor_pipelines = True,
                         verbose = False, minimum_file_age_days = 14):
     
     '''Function to manage processing of data using CBRAIN
 
-    Right now this function only supports processing in the case
-    where the bids bucket and derivatives bucket are the same.
-    In the future it will be desired to have functionality to
-    support the case where the two buckets are different, such
-    that a centralized BIDS bucket can be used by many investigators,
-    and the outputs can be saved to a bucket that they own.
+    The scripts currently support processing whether the BIDS/Derivatives
+    DataProviders are the same or different.
     
     This function will iterate through all BIDS subjects found in
     registered_and_s3_names and try to process them given the pipeline
-    specified. (1) first checks if pipeline derivatives already exist in
+    specified. The steps are generally as seen below.
+
+    (Updated on 5/6/2024)
+
+    The following procedure is used to first find which subjects we want
+    to process:
+    (1) - Check if pipeline derivatives exist in the derivatives bucket. If one or
+    more files already exist, skip processing for the current subejct.
+    (2) - Check if the subject has been processed in CBRAIN. The behavior of this
+    step depends on the status of rerun_level. Based on the CBRAIN task status and
+    rerun_level, the script will decide whether to process the subject or not.
+    (3) - Optionally download the scans.tsv file for the subject/session combo being
+    evaluated. This file can contain QC information that is used to determine if a
+    subject should be processed. If the file is expected but not present, a subject
+    won't be processed.
+    (4) Grab a list of the subjects' BIDS files from the bids_bucket, and reduce this
+    list to the files that are related to the current session (along with some session
+    agnostic files like sessions.tsv).
+    (5) Run an initial check of BIDS requirements that will be used to populate a HTML
+    file that describes processing.
+    (6) Check that at least one requirement file for the pipeline (found under comprehensive_processing_prerequisites)
+    is satisfied for the subject. If no requirements are satisfied, then the subject will not be processed.
+    (7) Check that all external requirements for the current pipeline are satisfied. If any are not
+    satisfied, then the subject will not be processed.
+    (8) Grab any BIDS files that satisfy at least one requirement in a comprehensive_processing_prerequisites
+    file. Some requirements (i.e. T1) may be present in more than one requirements file, or other requirements
+    may only be found in one file. As long as any processing requirement file is satisfied, the inidividual
+    requirements from any file will be allowed. (Note: a requirement category is forced to have the same
+    definition across files.)
+    (9) Check that all files (except generally the sessions.tsv) are at least minimum_file_age_days old. If
+    any file is too new, then the subject will not be processed.
+    (10) Check that the file selection procedure for ancestor pipelines yields the same group of files 
+    (judged by file name and size) as when the ancestor pipeline was originally ran. If this is not the
+    case, skip processing for the current subject.
+    
+    The previous steps are used to compile all subjects that should be processed, along with the
+    settings that should be used to process them. Once this process is complete:
+
+    (11) iterate through all subjects to be processed and submit them to CBRAIN for processing. The
+    only files that will be included for processing are files that are explicitly found in the previous
+    steps. This means files from certain modalities may be excluded from the processing environment if
+    they are not needed for processing.
+    (12) Create csv and html files under the logs_directory that can be used to track processing progress.
+    Be aware that if certain fields aren't filled out, this is generally because the subject has already
+    been processed so fields from the later portion of this script are not filled out.
+
+    (1) first checks if pipeline derivatives already exist in
     'bucket' for a given pipeline, only proceeding for subjects without results,
     (2) checks that all BIDS requirements are satisfied for that subject (as specified
-    by jsons in processing_prerequisites), (3) grabs the required BIDS files for that
-    subject using the specifications from processing_file_selection and processing_file_numbers,
+    by jsons in comprehensive_processing_prerequisites), (3) grabs the required BIDS 
+    files for that subject using the specifications from processing_file_selection and processing_file_numbers,
     (4) creates an extended cbrain file list and uploads it to 'bucket' and registers in CBRAIN,
     (5) launches processing for the subject given the parameters specified from processing_configurations
     folder. 
-    
+
     Parameters
     ----------
+
     pipeline_name : str
         Should be something like 'mriqc' or 'qsiprep' corresponding with
-        pipelines specified in repository folder
-    registered_and_s3_names: list of str
+        the folder where pipeline outputs would be stored in the derivatives
+        bucket.
+    registered_and_s3_names : list of str
         The names of subjects registered in CBRAIN and found in S3 data provider
         that could potentially be processed
-    registered_and_s3_ids: list of str
+    registered_and_s3_ids : list of str
         Has the same ordering of registered_and_s3_names, and contains
         the CBRAIN ids for each subject
-    cbrain_api_token: str
+    cbrain_api_token : str
         The API token for your current CBRAIN session
-    bids_data_provider_name: str, default 'HBCD-Pilot-Official'
-        Name of DP as listed in CBRAIN
-    user_name: str, default 'elee'
-        The name of the CBRAIN user processing the data
-    group_name: str, default 'HBCD-Computing'
-        The name of the CBRAIN Group associated with the data to
-        be processed
-    bucket: str, default 'hbcd-pilot'
-        The name of the bucket where the BIDS and derivatives data is stored
-    rerun_level: 0, 1, 2, default 1
+    group_id : str, default '10367'
+        The CBRAIN group to use for processing.
+    user_id : str, default '4022',
+        The CBRAIN user to use for processing.
+    bids_bucket_config : str, default '/some/path'
+        The path to the s3 config file for the BIDS bucket
+    bids_bucket : str, default 'hbcd-pilot'
+        The name of the BIDS bucket
+    bids_bucket_prefix : str, default 'assembly_bids'
+        The folder(s) under the BIDS bucket where the top
+        reference to the BIDS study-wide directory is found
+    derivatives_bucket_config : str, default '/some/path'
+        Same as BIDS bucket config, but for derivatives
+    derivatives_bucket : str, default 'hbcd-pilot'
+        Same as BIDS bucket, but for derivatives
+    derivatives_bucket_prefix : str, default 'derivatives'
+        Same as BIDS prefix, but for derivatives    
+    bids_data_provider_id : int, default 710
+        The CBRAIN DataProvider ID for the BIDS bucket
+    derivatives_data_provider_id : int, default 0
+        The CBRAIN DataProvider ID for the derivatives bucket
+    ses_name : str, default ''
+        Session to be processing (i.e. ses-V02)
+    rerun_level : 0, 1, 2, default 1
         If 0, then the script will not rerun any subjects that already have
         processing results in CBRAIN. If 1, then the script will rerun subjects
         that have processing results in CBRAIN but only if the processing results
         failed for CBRAIN/Cluster specific reasons. If 2, then the script will 
         also rerun processing in cases where processing failed on the cluster or
         in similar scenarios.
-    logs_directory: str, default None
-        If this path is set, some logs used to configure the CBRAIN processing
-        for a given subject will be saved both to this directory and to the
-        S3 bucket. If None, then no logs will be saved.
+    logs_directory : str or None, default None
+        Working directory where scans.tsv files will be temporarily downloaded and
+        also other logs describing subject processing before the logs are sent to
+        S3. These files will also be deleted during processing. HTML and csv files 
+        describing processing will also be stored here and will be kept after processing.
+        If None is used, spooky behavior will be observed.
+    logs_prefix : str, default 'cbrain_misc'
+        The prefix to use when placing the logs file in the Bucket path associated
+        with the Derivatives Data Provider.
+    session_dp_dict : dict
+        Keys represent session names (i.e. 'ses-V02') and values
+        are the corresponding DataProvider IDs that are used in
+        CBRAIN. CURRENTLY NOT USED. HOPEFULLY WILL LATER SPEED
+        UP PROCESSING....
+    session_agnostic_files : list of str, default ['sessions.tsv']
+        This will probably not be adjusted by users. This field is
+        used internally at several points to make sure the sessions.tsv
+        file is included in processing, and for other purposes also...
+    check_ancestor_pipelines : bool, default True
+        If True, check that file selection procedure for previously
+        ran ancestor pipelines yields the same group of files as
+        when the ancestor pipeline was originally ran.
+    verbose : bool, default False
+        Whether to print more text during processing
+    minimum_file_age_days : int, default 14
+        The minimum number of days that a file must be old before
+        it can be used for processing. Set to 0 if you don't want
+        this to be influencing processing routines.
+
+    Returns
+    -------
+
+    A pandas dataframe that describes processing.
     
     '''
 
@@ -2631,7 +2718,7 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
 
         #Grab the QC file for this subject so we can figure out which files can be used for processing.
         #If no QC requirements are specified in the comprehensive processing prerequisites, then the QC file will be ignored.
-        if type(session_qc_files_root_dir) != type(None):
+        if type(logs_directory) != type(None):
             subj_ses_qc_file_path = download_scans_tsv_file(bids_bucket_config, logs_directory, temp_subject, ses_name, bids_prefix = 'assembly_bids', bucket = bids_bucket, client = None)
             if (type(subj_ses_qc_file_path) == type(None)) and (qc_info_required == True):
                 print('    Skipping Processing - No QC file found for subject')
