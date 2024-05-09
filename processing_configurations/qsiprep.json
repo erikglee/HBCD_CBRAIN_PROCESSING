@@ -8,5 +8,7 @@
     "DENOISE_METHOD": "dwidenoise",
     "B1_BIAS_CORRECT": "none",
     "PEPOLAR_METHOD": "TOPUP+DRBUDDI",
-    "derivatives_prefix": ""
+    "derivatives_prefix": "",
+    "recon_spec": "hbcd_scalar_maps",
+    "verbose": true
 }
