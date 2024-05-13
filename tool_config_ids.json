@@ -1,10 +1,10 @@
 {
     "mriqc" : 3791,
-    "qsiprep" : 6680,
+    "qsiprep" : 6992,
     "hbcd_qc" : 6878,
     "nibabies" : 6695,
     "xcp_d" : 6974,
-    "made" : 6884,
+    "made" : 6995,
     "osprey" : 6875,
     "symri_postproc" : 6653,
     "qsiprep_qc" : 6881,
