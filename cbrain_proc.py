@@ -1440,7 +1440,8 @@ def grab_external_requirements(subject_name, cbrain_files,
     return subject_external_requirements, requirements_tracking_dict
 
 def find_potential_subjects_for_processing(cbrain_api_token, bids_bucket_config, bids_bucket = 'hbcd-pilot',
-                                           bids_prefix = 'assembly_bids', data_provider_id = '710'):
+                                           bids_prefix = 'assembly_bids', data_provider_id = '710',
+                                           verbose = False):
     """Find subjects that may be ready for processing
     
     Looks for subjects that are already registered in CBRAIN
@@ -1486,6 +1487,14 @@ def find_potential_subjects_for_processing(cbrain_api_token, bids_bucket_config,
     missing_in_s3_subjects = set(total_subjects) - set(s3_subjects)
     registered_and_s3 = (total_subjects - missing_in_s3_subjects) - non_registered_subjects
     print('Total identified subjects: {},\nSubjects Still Needing to Be Registered in CBRAIN: {},\nSubjects Registered in CBRAIN and in S3 (ready to process): {},\nRegistered Subjects Not in S3 (this should be 0): {}\n\n'.format(len(total_subjects), len(non_registered_subjects), len(registered_and_s3), len(missing_in_s3_subjects)))
+    if verbose:
+        print('Not Registered:')
+        for temp_subject in list(non_registered_subjects):
+            print('    {}'.format(temp_subject))
+        print('Not in S3:')
+        for temp_subject in list(missing_in_s3_subjects):
+            print('    {}'.format(temp_subject))
+
 
     registered_and_s3_ids = []
     registered_and_s3_names = []
