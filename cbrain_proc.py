@@ -1102,10 +1102,7 @@ def check_rerun_status(cbrain_subject_id, cbrain_tasks, derivatives_data_provide
     Parameters
     ----------
     cbrain_subject_id : str
-        Numeric ID of CBRAIN subject or file. NOTE
-        if processing was launched with a CBRAIN CSV,
-        then the CBRAIN CSV's ID may need to be used
-        instead.
+        Numeric ID of CBRAIN subject or file.
     cbrain_tasks : list of dicts
         All tasks in CBRAIN (returned by CBRAIN API)
     derivatives_data_provider_id : int
@@ -1116,7 +1113,7 @@ def check_rerun_status(cbrain_subject_id, cbrain_tasks, derivatives_data_provide
         This determines when the function will recommend rerunning
         processing. If 0 is used, processing will only be recommended
         when the cbrain_subject_id hasn't been used in any cbrain_tasks
-        with the specified derivatives_data_provider_di and tool_config_id.
+        with the specified derivatives_data_provider_id and tool_config_id.
         If 1 is used, processing will also be recommended when CBRAIN tasks
         fall under certain states that indicate processing failed for CBRAIN/
         system related reasons. If 2 is used, processing will also be recommended
