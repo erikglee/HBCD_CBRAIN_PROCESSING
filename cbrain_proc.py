@@ -936,49 +936,6 @@ def find_current_cbrain_tasks(cbrain_api_token, data_provider_id = None):
         return tasks_to_return
 
 
-def find_cbrain_files(cbrain_api_token):
-    '''Returns list of files on data provider
-    
-    Parameters
-    ----------
-    
-    cbrain_api_token : str
-        The CBRAIN API token for the current session
-        
-    Returns
-    -------
-    list of dictionaries with info on all CBRAIN files
-    
-    '''
-    base_url = 'https://portal.cbrain.mcgill.ca'
-    files = []
-    files_request = {'cbrain_api_token': cbrain_api_token, 'page': 1, 'per_page': 1000}
-
-    while True:
-        files_response = requests.get(
-            url = '/'.join([base_url, 'userfiles']),
-            data = files_request,
-            headers = {'Accept': 'application/json'}
-        )
-        if files_response.status_code != requests.codes.ok:
-            print('User files request failed.')
-            print(files_response)
-            break
-        # Collect the responses on this page then increment
-        files += files_response.json()
-        files_request['page'] += 1
-        # Stop requesting responses when we're at the last page
-        if len(files_response.json()) < files_request['per_page']:
-            break 
-            
-    #Restrict the returned files to ones in the current DP and of type ExtendedCbrainFileList
-    filter_results = list(filter(lambda f: data_provider_id == f['data_provider_id'], files))
-
-    #Print out info about what files were found
-    print("{} total files found under data provider {}\n".format(len(filter_results), data_provider_id))
-    
-    return filter_results
-
 
 def grab_external_requirements(subject_name, cbrain_files, 
                                 requirements_dict,
@@ -2316,7 +2273,7 @@ def update_processing(pipeline_name = None,
     cbrain_deriv_files = {}
     for temp_ses in session_dps_dict.keys():
         temp_dp_id = session_dps_dict[temp_ses]['id']
-        cbrain_deriv_files[temp_ses] = list(filter(lambda f: session_dps_dict[temp_dp_id] == f['data_provider_id'], cbrain_files))
+        cbrain_deriv_files[temp_ses] = list(filter(lambda f: temp_dp_id == f['data_provider_id'], cbrain_files))
         print("{} total files found under Derivatives data provider {}\n".format(len(cbrain_deriv_files[temp_ses]), temp_dp_id))
 
     #Print out info about what files were found
@@ -2392,7 +2349,7 @@ def update_processing(pipeline_name = None,
             #Grab the QC file for this subject so we can figure out which files can be used for processing.
             #If no QC requirements are specified in the comprehensive processing prerequisites, then the QC file will be ignored.
             if type(logs_directory) != type(None):
-                subj_ses_qc_file_path = download_scans_tsv_file(bids_bucket_config, logs_directory, temp_subject, temp_ses, bids_prefix = 'assembly_bids', bucket = bids_bucket, client = None)
+                subj_ses_qc_file_path = download_scans_tsv_file(bids_bucket_config, logs_directory, temp_subject, temp_ses_name, bids_prefix = bids_bucket_prefix, bucket = bids_bucket, client = None)
                 if (type(subj_ses_qc_file_path) == type(None)) and (qc_info_required == True):
                     print('    Skipping Processing - No QC file found for subject')
                     subject_processing_details['scans_tsv_present'] = False
@@ -2426,7 +2383,7 @@ def update_processing(pipeline_name = None,
             #Reduce the files to those that are relevant for
             #the current session being processed
             session_level = len(bids_bucket_prefix.split('/')) + 1 
-            session_files = grab_session_specific_file_info(subject_files, temp_ses,
+            session_files = grab_session_specific_file_info(subject_files, temp_ses_name,
                                 session_agnostic_files = session_agnostic_files,
                                 session_level = session_level)
             if len(session_files) == 0:
@@ -2440,7 +2397,7 @@ def update_processing(pipeline_name = None,
             #processing will be attempted.
             temp_req_output, req_tracking_dict = check_bids_requirements_v2(temp_subject, session_files, file_selection_dict,
                                 qc_df = subj_ses_qc_file, bucket = bids_bucket, prefix = bids_bucket_prefix,
-                                bids_bucket_config = bids_bucket_config, session = temp_ses,
+                                bids_bucket_config = bids_bucket_config, session = temp_ses_name,
                                 session_agnostic_files = session_agnostic_files,
                                 verbose = verbose)
             subject_processing_details.update(req_tracking_dict)
@@ -2451,7 +2408,7 @@ def update_processing(pipeline_name = None,
             for temp_requirement in requirements_dicts:
                 temp_req_output, _ = check_bids_requirements_v2(temp_subject, session_files, temp_requirement,
                             qc_df = subj_ses_qc_file, bucket = bids_bucket, prefix = bids_bucket_prefix,
-                            bids_bucket_config = bids_bucket_config, session = temp_ses,
+                            bids_bucket_config = bids_bucket_config, session = temp_ses_name,
                             session_agnostic_files = session_agnostic_files,
                             verbose = verbose)
                 #If return == None, this is because some QC info was expected but is missing
@@ -2490,7 +2447,7 @@ def update_processing(pipeline_name = None,
                                                                             qc_df = subj_ses_qc_file, bucket = bids_bucket,
                                                                             prefix = bids_bucket_prefix,
                                                                             bids_bucket_config = bids_bucket_config,
-                                                                            session = temp_ses, session_agnostic_files = session_agnostic_files,
+                                                                            session = temp_ses_name, session_agnostic_files = session_agnostic_files,
                                                                             associated_files_dict = associated_files_dict,
                                                                             verbose = False)
             
@@ -2515,7 +2472,7 @@ def update_processing(pipeline_name = None,
                 if len(ancestor_pipelines) > 0:
                     are_ancestors_the_same = check_if_ancestor_file_selection_is_same(temp_subject, session_files, ancestor_pipelines_file_selection_dict, qc_df = subj_ses_qc_file,
                                                                 bids_bucket = bids_bucket, bids_prefix = bids_bucket_prefix, bids_bucket_config = bids_bucket_config,
-                                                                session = temp_ses, session_agnostic_files = session_agnostic_files, associated_files_dict = associated_files_dict,
+                                                                session = temp_ses_name, session_agnostic_files = session_agnostic_files, associated_files_dict = associated_files_dict,
                                                                 verbose = verbose, derivatives_bucket_config = derivatives_bucket_config, derivatives_bucket = session_dps_dict[temp_ses]['bucket'],
                                                                 derivatives_bucket_prefix = session_dps_dict[temp_ses]['prefix'], logs_directory = logs_directory)
                     if are_ancestors_the_same == False:
@@ -2565,7 +2522,7 @@ def update_processing(pipeline_name = None,
                 #Launch Processing
                 status, json_for_logging = launch_task_concise_dict(pipeline_name, subject_external_requirements_list[i], cbrain_api_token, data_provider_id = session_dps_dict[temp_ses]['id'],
                                             group_id = group_id, user_id = user_id, task_description = '{} via API'.format(final_subjects_names_for_proc[i]),
-                                            all_to_keep = all_to_keep_lists[i], session_label = temp_ses.split('-')[1])
+                                            all_to_keep = all_to_keep_lists[i], session_label = temp_ses_name.split('-')[1])
             except:
                 print('Error encountered while trying to submit job for processing. This is likely a networking issue. Will try again in 5 seconds.')
                 time.sleep(5) #wait 5 seconds and try again
@@ -2575,7 +2532,7 @@ def update_processing(pipeline_name = None,
                 #Launch Processing
                 status, json_for_logging = launch_task_concise_dict(pipeline_name, subject_external_requirements_list[i], cbrain_api_token, data_provider_id = session_dps_dict[temp_ses]['id'],
                                             group_id = group_id, user_id = user_id, task_description = '{} via API'.format(final_subjects_names_for_proc[i]),
-                                            all_to_keep = all_to_keep_lists[i], session_label = temp_ses.split('-')[1])
+                                            all_to_keep = all_to_keep_lists[i], session_label = temp_ses_name.split('-')[1])
             #######################################################################
             
             json_for_logging['s3_metadata'] = metadata_dicts_list[i]
