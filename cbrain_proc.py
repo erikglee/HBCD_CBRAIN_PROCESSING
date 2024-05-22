@@ -2371,7 +2371,10 @@ def update_processing(pipeline_name = None,
                         subj_ses_qc_file = None
                     else:
                         subj_ses_qc_file = pd.read_csv(subj_ses_qc_file_path, delimiter = '\t')
+                    try:
                         os.remove(subj_ses_qc_file_path)
+                    except:
+                        pass
             else:
                 subj_ses_qc_file = None
 
