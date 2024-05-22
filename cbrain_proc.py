@@ -2276,7 +2276,7 @@ def update_processing(pipeline_name = None,
     for temp_ses in session_dps_dict.keys():
         temp_dp_id = session_dps_dict[temp_ses]['id']
         cbrain_deriv_files[temp_ses] = list(filter(lambda f: temp_dp_id == f['data_provider_id'], cbrain_files))
-        print('Name: {}, ID: {}, Bucket {}, Prefix {}'.format(session_dps_dict[temp_ses]['name'], temp_dp_id, session_dps_dict[temp_ses]['bucket'], session_dps_dict[temp_ses]['prefix']))
+        print('Name: {}, ID: {}, Bucket {}, Prefix {}'.format(temp_ses, temp_dp_id, session_dps_dict[temp_ses]['bucket'], session_dps_dict[temp_ses]['prefix']))
         print("   {} total files found under data provider".format(len(cbrain_deriv_files[temp_ses])))
 
     #Print out info about what files were found
