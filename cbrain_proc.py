@@ -2223,12 +2223,13 @@ def update_processing(pipeline_name = None,
     
     #Load the processing prerequisites for the current pipeline
     requirements_dicts, file_selection_dict = load_requirements_infos(pipeline_name)
-    print('{} requirements dictionaries: {}'.format(pipeline_name, requirements_dicts))
+    print('The following is a list of requirements dictionaries that will be used to determine whether a subject should be processed.\nIf any one of these dictionaries is satisfied, processing will occur:')
+    print('{}\n\n'.format(pipeline_name, requirements_dicts))
 
     #If any of the requirements are dependent on QC info, return True
     #otherwise return false and allow processing even when QC file is missing
     qc_info_required = is_qc_info_required(file_selection_dict)
-    print("QC info required: {}".format(qc_info_required))
+    print("Is QC Info Required For the Current Pipeline (True/False): {}".format(qc_info_required))
 
     #Load the processing prerequisites for the ancestor pipelines
     #this will be used to check if the files that were previously
@@ -2237,14 +2238,15 @@ def update_processing(pipeline_name = None,
     ancestor_pipelines_file_selection_dict = {}
     for temp_ancestor in ancestor_pipelines:
         ancestor_pipelines_file_selection_dict[temp_ancestor] = load_requirements_infos(temp_ancestor)[1]
-    print('The following ancestor pipelines will be checked for file selection consistency: {}'.format(ancestor_pipelines))
+    print('The following ancestor pipelines will be checked for file selection consistency: {}\n'.format(ancestor_pipelines))
 
     #Path to external requirements file for the given pipeline      
     external_requirements_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'external_requirements', '{}.json'.format(pipeline_name))
     with open(external_requirements_file_path, 'r') as f:
         external_requirements_dict = json.load(f)
-    print('{} external requirements dictionary: {}'.format(pipeline_name, external_requirements_dict))
-    print('{} file selection dictionary: {}\n\n'.format(pipeline_name, file_selection_dict))
+    print('The external requirements dictionary for the current pipeline is as follows: {}\n'.format(pipeline_name, external_requirements_dict))
+    print('The full file selection dictionary (made up of the union of all requirements dictionaries) is as follows:')
+    print('{}\n\n'.format(pipeline_name, file_selection_dict))
     ##################################################################
         
         
@@ -2284,7 +2286,7 @@ def update_processing(pipeline_name = None,
     
     registered_and_s3_names, registered_and_s3_ids = find_potential_subjects_for_processing_v2(bids_data_provider_files, bids_bucket_config,
                                                        bids_bucket = bids_bucket, bids_prefix = bids_bucket_prefix)
-    print('      Found {} BidsSubjects under DP'.format(len(registered_and_s3_names)))
+    print('      Found {} BidsSubjects under DP\n'.format(len(registered_and_s3_names)))
     
     
     #A list to store details about why some subjects were processed
