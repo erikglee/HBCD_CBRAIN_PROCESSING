@@ -2102,15 +2102,12 @@ def update_processing(pipeline_name = None,
                         max_subject_sessions_to_proc = None):
     
     '''Function to manage processing of data using CBRAIN
-
-    The scripts currently support processing whether the BIDS/Derivatives
-    DataProviders are the same or different.
     
     This function will iterate through all BIDS subjects found in
     registered_and_s3_names and try to process them given the pipeline
     specified. The steps are generally as seen below.
 
-    (Updated on 5/6/2024)
+    (Updated on 5/22/2024)
 
     The following procedure is used to first find which subjects we want
     to process:
