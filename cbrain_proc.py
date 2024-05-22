@@ -2510,37 +2510,37 @@ def update_processing(pipeline_name = None,
             #then try to launch a job for processing in CBRAIN.
             #########################################################################
             #########################################################################
-            print('    Processing {} with {} via API'.format(final_subjects_names_for_proc[i], pipeline_name))
+            print('    Processing {} with data from {} using {} via API'.format(final_subjects_names_for_proc[-1], temp_ses_name, pipeline_name))
 
 
             #Run "mark as newer" to be sure the latest version of the subject data
             #is in the local CBRAIN cache once processing begins##################
             try:
-                for temp_key in subject_external_requirements_list[i].keys():
-                    cbrain_mark_as_newer(subject_external_requirements_list[i][temp_key], cbrain_api_token)                
+                for temp_key in subject_external_requirements_list[-1].keys():
+                    cbrain_mark_as_newer(subject_external_requirements_list[-1][temp_key], cbrain_api_token)                
 
                 #Launch Processing
-                status, json_for_logging = launch_task_concise_dict(pipeline_name, subject_external_requirements_list[i], cbrain_api_token, data_provider_id = session_dps_dict[temp_ses]['id'],
-                                            group_id = group_id, user_id = user_id, task_description = '{} via API'.format(final_subjects_names_for_proc[i]),
-                                            all_to_keep = all_to_keep_lists[i], session_label = temp_ses_name.split('-')[1])
+                status, json_for_logging = launch_task_concise_dict(pipeline_name, subject_external_requirements_list[-1], cbrain_api_token, data_provider_id = session_dps_dict[temp_ses]['id'],
+                                            group_id = group_id, user_id = user_id, task_description = '{} via API'.format(final_subjects_names_for_proc[-1]),
+                                            all_to_keep = all_to_keep_lists[-1], session_label = temp_ses_name.split('-')[1])
             except:
                 print('Error encountered while trying to submit job for processing. This is likely a networking issue. Will try again in 5 seconds.')
                 time.sleep(5) #wait 5 seconds and try again
-                for temp_key in subject_external_requirements_list[i].keys():
-                    cbrain_mark_as_newer(subject_external_requirements_list[i][temp_key], cbrain_api_token)                
+                for temp_key in subject_external_requirements_list[-1].keys():
+                    cbrain_mark_as_newer(subject_external_requirements_list[-1][temp_key], cbrain_api_token)                
 
                 #Launch Processing
                 status, json_for_logging = launch_task_concise_dict(pipeline_name, subject_external_requirements_list[i], cbrain_api_token, data_provider_id = session_dps_dict[temp_ses]['id'],
-                                            group_id = group_id, user_id = user_id, task_description = '{} via API'.format(final_subjects_names_for_proc[i]),
-                                            all_to_keep = all_to_keep_lists[i], session_label = temp_ses_name.split('-')[1])
+                                            group_id = group_id, user_id = user_id, task_description = '{} via API'.format(final_subjects_names_for_proc[-1]),
+                                            all_to_keep = all_to_keep_lists[-1], session_label = temp_ses_name.split('-')[1])
             #######################################################################
             
-            json_for_logging['s3_metadata'] = metadata_dicts_list[i]
+            json_for_logging['s3_metadata'] = metadata_dicts_list[-1]
             if status == False:
-                raise ValueError('Error CBRAIN processing tasked was not submitted for {}. Issue must be resolved for processing to continue.'.format(final_subjects_names_for_proc[i]))
+                raise ValueError('Error CBRAIN processing tasked was not submitted for {}. Issue must be resolved for processing to continue.'.format(final_subjects_names_for_proc[-1]))
             else:
                 if type(logs_directory) != type(None):
-                    log_file_name = os.path.join(logs_directory, '{}_{}_UMNProcSubmission.json'.format(final_subjects_names_for_proc[i], pipeline_name))
+                    log_file_name = os.path.join(logs_directory, '{}_{}_UMNProcSubmission.json'.format(final_subjects_names_for_proc[-1], pipeline_name))
                     with open(log_file_name, 'w') as f:
                         json.dump(json_for_logging, f, indent = 4)
                     #derivatives_bucket_prefix
