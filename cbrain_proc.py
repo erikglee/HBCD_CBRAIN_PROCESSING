@@ -2312,7 +2312,7 @@ def update_processing(pipeline_name = None,
                 if subject_sessions_launched >= max_subject_sessions_to_proc:
                     break
         
-            print('Evaluating: {}'.format(temp_subject))
+            print('Evaluating: {}, {}'.format(temp_subject, temp_ses_name))
             
             #A dictionary to store details that will later be used to populate
             #a spreadsheet that will be used to track processing across subjects
