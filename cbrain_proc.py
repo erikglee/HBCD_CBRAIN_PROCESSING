@@ -2223,7 +2223,7 @@ def update_processing(pipeline_name = None,
     
     #Load the processing prerequisites for the current pipeline
     requirements_dicts, file_selection_dict = load_requirements_infos(pipeline_name)
-    print('The following is a list of requirements dictionaries that will be used to determine whether a subject should be processed.\nIf any one of these dictionaries is satisfied, processing will occur:')
+    print('The following is a list of requirements dictionaries that will be used to determine whether a subject should be processed. If any one of these dictionaries is satisfied, processing will occur:')
     print('{}\n'.format(requirements_dicts))
 
     #If any of the requirements are dependent on QC info, return True
@@ -2244,7 +2244,7 @@ def update_processing(pipeline_name = None,
     external_requirements_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'external_requirements', '{}.json'.format(pipeline_name))
     with open(external_requirements_file_path, 'r') as f:
         external_requirements_dict = json.load(f)
-    print('The external requirements dictionary for the current pipeline is as follows: {}\n'.format(pipeline_name, external_requirements_dict))
+    print('The external requirements dictionary for the current pipeline is as follows: {}\n'.format(external_requirements_dict))
     print('The full file selection dictionary (made up of the union of all requirements dictionaries) is as follows:')
     print('{}\n'.format(file_selection_dict))
     ##################################################################
