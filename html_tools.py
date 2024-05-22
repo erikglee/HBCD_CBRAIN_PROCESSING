@@ -56,7 +56,7 @@ def color_specific_value_cells(styler, df, primary_column, value="specific_value
 
 def reformat_df_and_produce_proc_html(study_tracking_df, pipeline_name, output_html_path, file_selection_dict):
     
-    study_tracking_df = study_tracking_df.sort_values(by=['subject'])
+    study_tracking_df = study_tracking_df.sort_values(by=['subject', 'session'])
     study_tracking_df.reset_index(drop=True, inplace=True)
     
     study_tracking_df.fillna('Not Evaluated', inplace=True)
