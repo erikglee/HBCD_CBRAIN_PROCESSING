@@ -2199,6 +2199,7 @@ def update_processing(pipeline_name = None,
                                                                                              bids_data_provider_name,
                                                                                              session_data_provider_names)
 
+    print("You are currently attempting to launch processing jobs with the tool {}.\n".format(pipeline_name))
 
     #Load the tool config id for the current pipeline being used for processing
     tool_config_file = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'tool_config_ids.json')
@@ -2239,7 +2240,7 @@ def update_processing(pipeline_name = None,
     ancestor_pipelines_file_selection_dict = {}
     for temp_ancestor in ancestor_pipelines:
         ancestor_pipelines_file_selection_dict[temp_ancestor] = load_requirements_infos(temp_ancestor)[1]
-    
+    print('The following ancestor pipelines will be checked for file selection consistency: {}'.format(ancestor_pipelines))
 
     #Path to external requirements file for the given pipeline      
     external_requirements_file_path = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'external_requirements', '{}.json'.format(pipeline_name))
@@ -2271,17 +2272,21 @@ def update_processing(pipeline_name = None,
     cbrain_files = find_cbrain_entities(cbrain_api_token, 'userfiles')
     bids_data_provider_files = list(filter(lambda f: bids_data_provider_id == f['data_provider_id'], cbrain_files))
     cbrain_deriv_files = {}
+    print('The following derivative data providers will be used to see if processing is needed + to house the outputs of jobs launched later in the script:')
     for temp_ses in session_dps_dict.keys():
         temp_dp_id = session_dps_dict[temp_ses]['id']
         cbrain_deriv_files[temp_ses] = list(filter(lambda f: temp_dp_id == f['data_provider_id'], cbrain_files))
-        print("{} total files found under Derivatives data provider {}\n".format(len(cbrain_deriv_files[temp_ses]), temp_dp_id))
+        print('Name: {}, ID: {}, Bucket {}, Prefix {}'.format(session_dps_dict[temp_ses]['name'], temp_dp_id, session_dps_dict[temp_ses]['bucket'], session_dps_dict[temp_ses]['prefix']))
+        print("   {} total files found under data provider".format(len(cbrain_deriv_files[temp_ses])))
 
     #Print out info about what files were found
-    print("{} total files found under BIDS data provider {}\n".format(len(bids_data_provider_files), bids_data_provider_id))
+    print('\nProcessing will occur using BidsSubjects under the following DataProvider:\nName: {}, ID: {}, Bucket {}, Prefix {}'.format(session_dps_dict[temp_ses]['name'], temp_dp_id, session_dps_dict[temp_ses]['bucket'], session_dps_dict[temp_ses]['prefix']))
+    print("   {} total files found under data provider\n".format(len(bids_data_provider_files)))
     ########################################################################################
     
     registered_and_s3_names, registered_and_s3_ids = find_potential_subjects_for_processing_v2(bids_data_provider_files, bids_bucket_config,
                                                        bids_bucket = bids_bucket, bids_prefix = bids_bucket_prefix)
+    print('   Found {} BidsSubjects under DP'.format(len(registered_and_s3_names)))
     
     
     #A list to store details about why some subjects were processed
@@ -2556,15 +2561,11 @@ def update_processing(pipeline_name = None,
     # and submit task to process their data in CBRAIN.
     
     study_tracking_df = pd.DataFrame.from_dict(study_processing_details)
-    print(type(logs_directory))
-    print(logs_directory)
     if type(logs_directory) != type(None):
-        print('Hello')
         log_csv_name = os.path.join(logs_directory, 'processing_details_{}.csv'.format(pipeline_name))
         log_html_name = os.path.join(logs_directory, 'processing_details_{}.html'.format(pipeline_name))
         study_tracking_df = html_tools.reformat_df_and_produce_proc_html(study_tracking_df, pipeline_name, log_html_name, file_selection_dict)
         study_tracking_df.to_csv(log_csv_name, index = False)
-        print(log_html_name)
 
     
     return study_tracking_df
