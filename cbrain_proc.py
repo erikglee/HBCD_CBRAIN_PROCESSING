@@ -953,7 +953,6 @@ def find_cbrain_files(cbrain_api_token):
     base_url = 'https://portal.cbrain.mcgill.ca'
     files = []
     files_request = {'cbrain_api_token': cbrain_api_token, 'page': 1, 'per_page': 1000}
-    data_provider_id = int(data_provider_id)
 
     while True:
         files_response = requests.get(
@@ -2312,7 +2311,7 @@ def update_processing(pipeline_name = None,
         cbrain_session_tasks[temp_ses] = list(filter(lambda f: temp_dp_id == f['results_data_provider_id'], current_cbrain_tasks))
 
     #Grab CBRAIN Files that will later be referenced ##################################################
-    cbrain_files = find_cbrain_files(cbrain_api_token)
+    cbrain_files = find_cbrain_entities(cbrain_api_token, 'userfiles')
     bids_data_provider_files = list(filter(lambda f: bids_data_provider_id == f['data_provider_id'], cbrain_files))
     cbrain_deriv_files = {}
     for temp_ses in session_dps_dict.keys():
