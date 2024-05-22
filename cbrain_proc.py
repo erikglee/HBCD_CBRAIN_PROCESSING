@@ -2556,11 +2556,15 @@ def update_processing(pipeline_name = None,
     # and submit task to process their data in CBRAIN.
     
     study_tracking_df = pd.DataFrame.from_dict(study_processing_details)
+    print(type(logs_directory))
+    print(logs_directory)
     if type(logs_directory) != type(None):
+        print('Hello')
         log_csv_name = os.path.join(logs_directory, 'processing_details_{}.csv'.format(pipeline_name))
         log_html_name = os.path.join(logs_directory, 'processing_details_{}.html'.format(pipeline_name))
         study_tracking_df = html_tools.reformat_df_and_produce_proc_html(study_tracking_df, pipeline_name, log_html_name, file_selection_dict)
         study_tracking_df.to_csv(log_csv_name, index = False)
+        print(log_html_name)
 
     
     return study_tracking_df
