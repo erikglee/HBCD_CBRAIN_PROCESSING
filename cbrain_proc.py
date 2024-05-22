@@ -122,6 +122,7 @@ def find_potential_subjects_for_processing_v2(bids_data_provider_files, bids_buc
 
     #Find S3 Subjects
     s3_subjects = find_s3_subjects(bids_bucket_config, bucket = bids_bucket, prefix = bids_prefix)
+    s3_subjects.sort()
 
     #Narrow down BIDS DP Files to BidsSubject instances
     cbrain_bids_subject_files = list(filter(lambda f: 'BidsSubject' == f['type'], bids_data_provider_files))
