@@ -2280,13 +2280,13 @@ def update_processing(pipeline_name = None,
         print("      {} total files found under data provider".format(len(cbrain_deriv_files[temp_ses])))
 
     #Print out info about what files were found
-    print('\nProcessing will occur using BidsSubjects under the following DataProvider:\nName: {}, ID: {}, Bucket: {}, User Defined Prefix: {}'.format(bids_data_provider_name, bids_data_provider_id, bids_bucket, bids_bucket_prefix))
-    print("   {} total files found under data provider\n".format(len(bids_data_provider_files)))
+    print('\n   Processing will occur using BidsSubjects under the following DataProvider:\nName: {}, ID: {}, Bucket: {}, User Defined Prefix: {}'.format(bids_data_provider_name, bids_data_provider_id, bids_bucket, bids_bucket_prefix))
+    print("      {} total files found under data provider".format(len(bids_data_provider_files)))
     ########################################################################################
     
     registered_and_s3_names, registered_and_s3_ids = find_potential_subjects_for_processing_v2(bids_data_provider_files, bids_bucket_config,
                                                        bids_bucket = bids_bucket, bids_prefix = bids_bucket_prefix)
-    print('   Found {} BidsSubjects under DP'.format(len(registered_and_s3_names)))
+    print('      Found {} BidsSubjects under DP'.format(len(registered_and_s3_names)))
     
     
     #A list to store details about why some subjects were processed
