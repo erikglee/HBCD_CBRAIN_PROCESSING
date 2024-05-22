@@ -2224,12 +2224,12 @@ def update_processing(pipeline_name = None,
     #Load the processing prerequisites for the current pipeline
     requirements_dicts, file_selection_dict = load_requirements_infos(pipeline_name)
     print('The following is a list of requirements dictionaries that will be used to determine whether a subject should be processed.\nIf any one of these dictionaries is satisfied, processing will occur:')
-    print('{}\n\n'.format(pipeline_name, requirements_dicts))
+    print('{}\n'.format(requirements_dicts))
 
     #If any of the requirements are dependent on QC info, return True
     #otherwise return false and allow processing even when QC file is missing
     qc_info_required = is_qc_info_required(file_selection_dict)
-    print("Is QC Info Required For the Current Pipeline (True/False): {}".format(qc_info_required))
+    print("Is QC Info Required For the Current Pipeline (True/False): {}\n".format(qc_info_required))
 
     #Load the processing prerequisites for the ancestor pipelines
     #this will be used to check if the files that were previously
@@ -2246,7 +2246,7 @@ def update_processing(pipeline_name = None,
         external_requirements_dict = json.load(f)
     print('The external requirements dictionary for the current pipeline is as follows: {}\n'.format(pipeline_name, external_requirements_dict))
     print('The full file selection dictionary (made up of the union of all requirements dictionaries) is as follows:')
-    print('{}\n\n'.format(pipeline_name, file_selection_dict))
+    print('{}\n'.format(file_selection_dict))
     ##################################################################
         
         
