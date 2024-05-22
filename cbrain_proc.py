@@ -19,23 +19,6 @@ import html_tools
 import time
 
 
-
-#WHAT DO WE NEED TO IMPLEMENT.
-#1. Step 1 - find a list of all subjects registered in CBRAIN
-#2. Step 2 - find which pipelines have been run for each subject
-#3. Step 3 - find which subjects have the prerequisite files for CBRAIN processing.
-#4. Step 4 - (optional) find which subjects are currently processing with different pipelines and which subjects have previously failed processing in different pipelines
-#5  Step 5 - based on results of steps 1-4, find which subjects need to be processed in the current pipeline
-#6  Step 6 - find files that should be included in specific processing pipeline for desired subjects
-#7  Step 7 - make a CBRAIN CSV file
-
-#Comment - can LORIS make a BIDS file exclusion list that I can reference?
-#In what cases are we fine with running processing with incomplete data?
-#Only T1 or only T2?
-#One fMRI scan + field maps
-#One DWI scan + field masp
-#Partial EEG acquisition?
-
 def find_cbrain_subjects(cbrain_api_token, data_provider_id = 710): #For the real study this should be 710
     '''Find a list of subjects registered in CBRAIN
 
@@ -105,6 +88,56 @@ def find_cbrain_subjects(cbrain_api_token, data_provider_id = 710): #For the rea
         
     return file_names, ids, sizes
 
+
+def find_potential_subjects_for_processing_v2(bids_data_provider_files, bids_bucket_config, bids_bucket = 'hbcd-pilot',
+                                           bids_prefix = 'assembly_bids'):
+    """Find subjects that may be ready for processing
+    
+    Looks for subjects that are already registered in CBRAIN
+    and also exist in the S3 bucket. Returns arguments that
+    will be used with update_fully_generic_processing_using_csv_dict
+    to run processing with different pipelines.
+    
+    Parameters
+    ----------
+
+    bids_data_provider_files : list of dicts
+        CBRAIN files on the BIDS DateProvider
+    bids_bucket_config : str
+        Path to the bids bucket config file
+    bids_bucket : str
+        Name of the S3 bucket to look for subjects in
+    bids_prefix : str
+        Prefix to look for subjects in (i.e. assembly_bids)
+    
+    Returns
+    -------
+
+    registered_and_s3 : list
+        Subjects that are registered in CBRAIN and in S3
+    registered_and_s3_ids : list
+        CBRAIN IDs for the subjects that are registered in CBRAIN and in S3
+
+    """
+
+    #Find S3 Subjects
+    s3_subjects = find_s3_subjects(bids_bucket_config, bucket = bids_bucket, prefix = bids_prefix)
+
+    #Narrow down BIDS DP Files to BidsSubject instances
+    cbrain_bids_subject_files = list(filter(lambda f: 'BidsSubject' == f['type'], bids_data_provider_files))
+
+    #Find S3 subjects that are also registered in CBRAIN
+    registered_and_s3_ids = []
+    registered_and_s3_names = []
+    for temp_subject in s3_subjects:
+        for i, temp_cbrain in enumerate(cbrain_bids_subject_files):
+            if temp_cbrain['name'] == temp_subject:
+                registered_and_s3_ids.append(temp_cbrain['id'])
+                registered_and_s3_names.append(temp_cbrain['name'])
+                break
+
+    return registered_and_s3_names, registered_and_s3_ids
+
 def find_s3_subjects(bids_bucket_config, bucket = 'hbcd-pilot', prefix = 'assembly_bids'):
     '''Utility to find BIDS subjects in S3 bucket
     
@@ -157,6 +190,64 @@ def find_s3_subjects(bids_bucket_config, bucket = 'hbcd-pilot', prefix = 'assemb
             
     #return list of s3 subjects
     return s3_subjects
+
+
+def grab_cbrain_initialization_details(cbrain_api_token, group_name, bids_data_provider_name, session_data_providers):
+    
+    cbrain_groups = find_cbrain_entities(cbrain_api_token, 'groups')
+    group_id = list(filter(lambda f: group_name == f['name'], cbrain_groups))
+    if len(group_id) != 1:
+        raise NameError('Error: Expected to find one CBRAIN Group ID corresponding with {} but found {}'.format(group_name, len(group_id)))
+    else:
+        group_id = group_id[0]['id']
+
+
+    cbrain_dps = find_cbrain_entities(cbrain_api_token, 'data_providers')
+    bids_data_provider_id = list(filter(lambda f: bids_data_provider_name == f['name'], cbrain_dps))
+    if len(bids_data_provider_id) != 1:
+        raise NameError('Error: Expected to find one CBRAIN Data Provider ID corresponding with {} but found {}'.format(bids_data_provider_name, len(bids_data_provider_id)))
+    else:
+        bids_bucket = bids_data_provider_id[0]['cloud_storage_client_bucket_name']
+        bids_dp_id = bids_data_provider_id[0]['id']
+
+    session_dps_dict = {}
+    for temp_session_data_provider in session_data_providers:
+        temp_data_provider_id = list(filter(lambda f: temp_session_data_provider == f['name'], cbrain_dps))
+        if len(temp_data_provider_id) != 1:
+            raise NameError('Error: Expected to find one CBRAIN Data Provider ID corresponding with {} but found {}'.format(temp_session_data_provider, len(temp_data_provider_id)))
+        else:
+            session_dps_dict[temp_session_data_provider] = {'id' : temp_data_provider_id[0]['id'],
+                                                                       'bucket' : temp_data_provider_id[0]['cloud_storage_client_bucket_name'],
+                                                                       'prefix' : temp_data_provider_id[0]['cloud_storage_client_path_start']}
+    
+    
+    return group_id, bids_bucket, bids_dp_id, session_dps_dict
+
+
+def find_cbrain_entities(cbrain_api_token, entity_type):
+
+    base_url = 'https://portal.cbrain.mcgill.ca'
+    tasks = []
+    tasks_request = {'cbrain_api_token': cbrain_api_token, 'page': 1, 'per_page': 1000}
+
+    while True:
+        tasks_response = requests.get(
+            url = '/'.join([base_url, entity_type]),
+            data = tasks_request,
+            headers = {'Accept': 'application/json'}
+        )
+        if tasks_response.status_code != requests.codes.ok:
+            print('User tasks request failed.')
+            print(tasks_response)
+            break
+        # Collect the responses on this page then increment
+        tasks += tasks_response.json()
+        tasks_request['page'] += 1
+        # Stop requesting responses when we're at the last page
+        if len(tasks_response.json()) < tasks_request['per_page']:
+            break 
+            
+    return tasks
 
 def grab_subject_file_info(subject_id, bids_bucket_config, bucket = 'hbcd-pilot', prefix = 'assembly_bids'):
     '''Utility that grabs BIDS data for a given subject
@@ -370,464 +461,7 @@ def grab_session_specific_file_info(all_subject_files, session,
                 session_files.append(temp_file)
 
     return session_files
-
-
-def check_bids_requirements(subject_id, requirements_dict, qc_df = None, bucket = 'hbcd-pilot', prefix = 'assembly_bids',
-                            bids_bucket_config = False, session = None, session_agnostic_files = ['sessions.tsv']):
-    '''Utility to check if BIDS subject has required files for procesing.
-
-    Example
-    -------
-
-    For each parent requirement (FMRI, T1, T2), check that at least one file
-    exists that either does or doesn't have the specified content in it's name.
-    So T1, there should be a file that has "T1w.nii.gz" in it's name, and not
-    have "rec-undistorted" and "acq-svslocalizer" in it's name.
-    requirements_dict = {
-        "FMRI" : {"bold.nii.gz" : true, "rec-undistorted" : false, "rec-biascorrected" : false},
-        "T1" : {"T1w.nii.gz" : true, "rec-undistorted" : false, "acq-svslocalizer" : false},
-        "T2" : {"T2w.nii.gz" : true, "rec-undistorted" : false, "acq-svslocalizer" : false}
-    }
-    requirements_satisfied = ('sub-01', requirements_dict)
-
-    The function will return True if FMRI, T1, and T2 requirements are ALL
-    satisfied, and False if any of them are not.
     
-    Parameters
-    ----------
-    
-    subject_id : str
-        Subject whose BIDS requirements are being checked
-        (i.e. sub-01)
-    requirements_dict : dict
-        Dictionary of file requirements that must be satisfied
-        for processing.
-    bucket : str, default 'hbcd_cbrain_test'
-        The name of the bucket to query for files
-    prefix : str, default 'bids/sub'
-        The prefix to restrict the files returned by
-        the search query 
-    bids_bucket_config : bool or str, default False
-        If bids_bucket_config is a string, this
-        will be used as a config file to identify
-        the s3 credentials... otherwise the default
-        location will be used
-        
-    Returns
-    -------
-    
-    bool
-        True if requirements are all satisfied,
-        otherwise False
-        
-    '''
-
-    # Create a dictionary that will store information about the
-    # different processing requirements. This is not actually
-    # used for processing, but will be used to build a spreadsheet
-    # that describes which subjects were/werent processed.
-    requirements_tracking_dict = {}
-    for temp_req in requirements_dict.keys():
-        requirements_tracking_dict[temp_req] = 'No File'
-
-    
-    # Do some cosmetics so that the prefix includes the pipeline
-    # name and so that later we look for the subject ID at the
-    # right level
-    full_prefix = os.path.join(prefix, subject_id)
-    prefix_offset = len(full_prefix.split('/')) - 1
-    if len(prefix) == 0:
-        prefix_offset = prefix_offset - 1
-        
-    # Create a PageIterator from the Paginator
-    page_iterator = create_page_iterator(bucket = bucket, prefix = full_prefix, bucket_config = bids_bucket_config)
-
-    #Iterate through bucket to find BIDS files for this subject
-    subject_files = []
-    for page in page_iterator:
-        if 'Contents' in page:
-            for temp_dict in page['Contents']:
-                subject_files.append(temp_dict['Key'].split('/')[-1])
-        else:
-            print('No BIDS contents found for: {}'.format(subject_id))
-
-    parent_requirements_satisfied = 0
-    for parent_requirement in requirements_dict.keys():
-        temp_tracking_status = 'No File'
-        child_requirements = requirements_dict[parent_requirement]
-        for temp_file in subject_files:
-            child_requirements_satisfied = 0
-            skip_file = 0
-            temp_ses = temp_file.split('_')[1]
-            #Skip the file if (1) we are focusing on session specific files, and
-            #(2) the current file is from a different session and (3) if the file
-            #is a session agnostic file. 1,2,3 must all be true to skip a file
-            if type(session) != type(None):
-                if session != temp_ses:
-                    for temp_ses_agnostic in session_agnostic_files:
-                        if temp_ses_agnostic not in temp_file:
-                            skip_file = 1
-            if skip_file:
-                continue
-            for child_requirement in child_requirements['file_naming'].keys():
-                if (child_requirement in temp_file) == child_requirements['file_naming'][child_requirement]:
-                    child_requirements_satisfied += 1
-                else:
-                    break
-            if child_requirements_satisfied == len(child_requirements['file_naming'].keys()):
-                
-                #Now check if the qc_criteria for the parent requirement is satisfied.
-                #This only needs to be checked if qc_criteria is listed for the current
-                #requirement and if a qc dataframe is provided
-                requirement_disqualified = 0
-                #print(parent_requirement)
-                #print('Parent Requirement: {}'.format(parent_requirement))
-                if (type(qc_df) != type(None)) and ('qc_criteria' in requirements_dict[parent_requirement].keys()):
-                    
-                    #Grab partial df with just the current file's ratings
-                    partial_df = qc_df[qc_df['filename'].str.contains(temp_file.split('/')[-1])]
-                    if len(partial_df) == 0:
-                        print('    Warning: Subject has QC file but missing entries, retry proc later ({})'.format(temp_file))
-                        if temp_tracking_status == 'No File': #This wont overwrite the status when requirements are satisfied
-                            temp_tracking_status = 'No QC'
-
-                        #Should there be a dry run option here where we dont
-                        #return if we are just running this function to create
-                        #the tracking log
-                        return None, requirements_tracking_dict
-                    
-                    #Iterate through each QC requirement (the requirements are
-                    #stored as a list of dictionaries, each with one key/value pair)
-                    for temp_qc_criteria in requirements_dict[parent_requirement]['qc_criteria']:
-                        
-                        for temp_key in temp_qc_criteria.keys():
-                            #If the requirement is a boolean, make sure the
-                            #QC value matches that of the requirement
-                            if type(temp_qc_criteria[temp_key]) == bool:
-                                if partial_df[temp_key].values[0] != temp_qc_criteria[temp_key]:
-                                    
-                                    #As backup, check if yes/no was used instead of boolean
-                                    if temp_qc_criteria[temp_key]:
-                                        temp_bool_str = 'YES'
-                                    else:
-                                        temp_bool_str = 'NO'
-                                    #print(partial_df[temp_key].values[0])
-                                    #print(type(partial_df[temp_key].values[0]))
-                                    if type(partial_df[temp_key].values[0]) != str:
-                                        temp_val = str(partial_df[temp_key].values[0]).upper()
-                                    else:
-                                        temp_val = partial_df[temp_key].values[0].upper()
-                                    if temp_val != temp_bool_str:
-                                        #print(partial_df[temp_key].values[0])
-                                        #print(temp_qc_criteria[temp_key])
-                                        #print('{}: {}'.format(temp_key, partial_df[temp_key].values[0]))
-                                        if (temp_tracking_status == 'No File') or (temp_tracking_status == 'No QC'):
-                                            temp_tracking_status = 'Failed QC'
-                                        requirement_disqualified = 1
-                                        
-                            #Otherwise assume the requirement is a number, and
-                            #make sure the observed value is less than the requirement
-                            else:
-                                if np.isnan(partial_df[temp_key].values[0]):
-                                    if (temp_tracking_status == 'No File') or (temp_tracking_status == 'No QC'):
-                                        temp_tracking_status = 'Missing QC'
-                                    requirement_disqualified = 1
-                                elif (partial_df[temp_key].values[0] > temp_qc_criteria[temp_key]):
-                                    #print('{}: {}'.format(temp_key, partial_df[temp_key].values[0]))
-                                    if (temp_tracking_status == 'No File') or (temp_tracking_status == 'No QC'):
-                                        temp_tracking_status = 'Failed QC'
-                                    requirement_disqualified = 1
-                             
-                #print('Requirement Disqualified Status: {}\n'.format(requirement_disqualified))
-                if requirement_disqualified == 0:
-                    parent_requirements_satisfied += 1
-                    temp_tracking_status = 'Satisfied'
-                requirements_tracking_dict[parent_requirement] = temp_tracking_status
-                break
-    
-    #If all requirements have been satisfied at least once return true, else false
-    if parent_requirements_satisfied == len(requirements_dict.keys()):
-        #print(len(requirements_dict.keys()))
-        return True, requirements_tracking_dict
-    else:
-        return False, requirements_tracking_dict
-    
-    
-def grab_required_bids_files(subject_id, requirements_dict, qc_df = None, bucket = 'hbcd-pilot', prefix = 'assembly_bids', 
-                             bids_bucket_config = False, session = None, session_agnostic_files = ['sessions.tsv'],
-                             associated_files_dict = None):
-    '''Utility to grab the names of BIDS files required for processing.
-    
-    This function assumes check_bids_requirements
-    has already been ran and that the user is fine
-    with the number of requirements satisfied in the
-    requirements dict. The goal of this script is to
-    return a list of files that satisfies the requirements
-    dict. The returned list will only have (at most) the
-    number of requirements specified by num_requirements_dict.
-    For example, the user can ask for 1, 2, or 'all' files that
-    fullfill a given requirement. In the case that there are
-    0 files fullfilling a requirement, the function will only
-    return the file paths specified by the other requirements.
-
-    Example
-    -------
-
-    #Only select files that satisfy FMRI, T1, or T2 requirements
-    requirements_dict = {
-        "FMRI" : {"bold.nii.gz" : true, "rec-undistorted" : false, "rec-biascorrected" : false},
-        "T1" : {"T1w.nii.gz" : true, "rec-undistorted" : false, "acq-svslocalizer" : false},
-        "T2" : {"T2w.nii.gz" : true, "rec-undistorted" : false, "acq-svslocalizer" : false}
-        }
-    
-    #Of the files that satisfy any of the given requirements,
-    #keep the desired number of files that satisfy each requirement.
-    #This can either be an integer, or 'all' if every file should be
-    #kept. Note that the requirements_dict and num_requirements_dict
-    #must have the same keys.
-    num_requirements_dict = {"T1" : 1", "T2" : 1", "FMRI" : "all"}
-
-    files_list = grab_required_bids_files('sub-01', requirements_dict, num_requirements_dict)
-    
-    Parameters
-    ----------
-    subject_id : str
-        Subject whose BIDS requirements are being checked.
-        (i.e. sub-01)
-    requirements_dict : dict
-        Dictionary listing possible requirements that must be
-        satisfied for a file to be included in processing.
-        (See example above)
-    num_requirements_dict : dict
-        Dictionary listing the number of files that will be
-        kept for any given requirement. (See example above)
-    bucket : str, default 'hbcd-pilot'
-        The name of the bucket to query for files
-    prefix : str, default 'assembly_bids'
-        The prefix to restrict the files returned by
-    bids_bucket_config : bool or str, default False
-        If bids_bucket_config is a string, this
-        will be used as a config file to identify
-        the s3 credentials... otherwise the default
-        location will be used
-    
-    Returns
-    -------
-    list
-        List of file paths that satisfy the requirements
-        and that will be used for processing.
-        
-    '''
-    
-    # Do some cosmetics so that the prefix includes the pipeline
-    # name and so that later we look for the subject ID at the
-    # right level
-    full_prefix = os.path.join(prefix, subject_id)
-    prefix_offset = len(full_prefix.split('/')) - 1
-    if len(prefix) == 0:
-        prefix_offset = prefix_offset - 1
-        
-    # Create a PageIterator from the Paginator
-    page_iterator = create_page_iterator(bucket = bucket, prefix = full_prefix, bucket_config = bids_bucket_config)
-
-    #Iterate through bucket to find BIDS files for this subject
-    subject_files = []
-    subject_etags = []
-    subject_metadata = []
-    subject_full_names = []
-    subject_with_slashes = '/' + subject_id + '/'
-    for page in page_iterator:
-        if 'Contents' in page:
-            for temp_dict in page['Contents']:
-                skip_file = 0
-                partial_path = temp_dict['Key'].split(subject_with_slashes)[-1]
-                if type(session) != type(None):
-                    if session != partial_path.split('/')[-1].split('_')[1]:
-                        for temp_ses_agnostic in session_agnostic_files:
-                            if temp_ses_agnostic not in partial_path:
-                                skip_file = 1
-                
-                if skip_file == 0:
-                    subject_files.append(partial_path)
-                    subject_etags.append(temp_dict['ETag'])
-                    subject_metadata.append(temp_dict)
-        else:
-            print('No BIDS contents found for: {}'.format(subject_id))
-    
-    sorted_etags = [x for _, x in sorted(zip(subject_files, subject_etags))]
-    sorted_etags.reverse()
-    sorted_metadata = [x for _, x in sorted(zip(subject_files, subject_metadata))]
-    sorted_metadata.reverse()
-    sorted_full_names = [x for _, x in sorted(zip(subject_files, subject_full_names))]
-    sorted_full_names.reverse()
-    subject_files.sort()
-    subject_files.reverse()
-    output_file_list = []
-    etag_dict = {}
-    metadata_dict = {}
-    for i, parent_requirement in enumerate(requirements_dict.keys()):
-        temp_requirement_file_list = []
-        temp_requirement_etag_list = []
-        temp_requirements_metadata_list = []
-        child_requirements = requirements_dict[parent_requirement]['file_naming']
-        for j, temp_file in enumerate(subject_files):
-            child_requirements_satisfied = 0
-            for child_requirement in child_requirements.keys():
-                if (child_requirement in temp_file) == child_requirements[child_requirement]:
-                    child_requirements_satisfied += 1
-                else:
-                    break
-            if child_requirements_satisfied == len(child_requirements.keys()):
-                temp_requirement_file_list.append(temp_file)
-                temp_requirement_etag_list.append(sorted_etags[j])
-                temp_requirements_metadata_list.append(sorted_metadata[j])
-        
-        counter = 0
-        partial_output_file_list = []
-        partial_output_file_list_qc = []
-        for j, temp_file in enumerate(temp_requirement_file_list):
-            qc_values = []
-            requirement_disqualified = 0
-            if ('qc_criteria' in requirements_dict[parent_requirement]) and (type(qc_df) != type(None)):
-                partial_df = qc_df[qc_df['filename'].str.contains(temp_file.split('/')[-1])]
-                if len(partial_df) == 0:
-                    is_ses_agnostic = 0
-                    for temp_ses_agnostic in session_agnostic_files:
-                        if temp_ses_agnostic in temp_file:
-                            is_ses_agnostic = 1
-                    if is_ses_agnostic == 0:
-                        print('   Exiting processing attempt: No QC info for {}'.format(temp_file))
-                        return None, None
-
-
-                #Iterate through each QC requirement (the requirements are
-                #stored as a list of dictionaries, each with one key/value pair)
-                for temp_qc_criteria in requirements_dict[parent_requirement]['qc_criteria']:
-
-                    for temp_key in temp_qc_criteria.keys():
-                        #If the requirement is a boolean, make sure the
-                        #QC value matches that of the requirement
-                        if type(temp_qc_criteria[temp_key]) == bool:
-                            if partial_df[temp_key].values[0] != temp_qc_criteria[temp_key]:
-
-                                #As backup, check if yes/no was used instead of boolean
-                                if temp_qc_criteria[temp_key]:
-                                    temp_bool_str = 'YES'
-                                else:
-                                    temp_bool_str = 'NO'
-                                #print(partial_df[temp_key].values[0])
-                                #print(type(partial_df[temp_key].values[0]))
-                                if type(partial_df[temp_key].values[0]) != str:
-                                    temp_val = str(partial_df[temp_key].values[0]).upper()
-                                else:
-                                    temp_val = partial_df[temp_key].values[0].upper()
-                                if temp_val != temp_bool_str:
-                                    #print(partial_df[temp_key].values[0])
-                                    #print(temp_qc_criteria[temp_key])
-                                    #print('{}: {}'.format(temp_key, partial_df[temp_key].values[0]))
-                                    requirement_disqualified = 1
-
-                        #Otherwise assume the requirement is a number, and
-                        #make sure the observed value is less than the requirement
-                        else:
-                            if (partial_df[temp_key].values[0] > temp_qc_criteria[temp_key]) or (np.isnan(partial_df[temp_key].values[0])):
-                                #print('{}: {}'.format(temp_key, partial_df[temp_key].values[0]))
-                                requirement_disqualified = 1
-                            else:
-                                #If the qc value is good enough, save it so we
-                                #can later compare QC values across scans of the
-                                #same type and pick the best one
-                                qc_values.append(partial_df[temp_key].values[0])
-            
-            #I think the code below should work whether or not QC information is present
-            if requirement_disqualified == 0:
-                if 'num_to_keep' not in requirements_dict[parent_requirement].keys():
-                    partial_output_file_list.append(temp_file)
-                    partial_output_file_list_qc.append(qc_values)
-                    etag_dict[temp_file] = temp_requirement_etag_list[j]
-                    metadata_dict[temp_file] = temp_requirements_metadata_list[j]
-                elif requirements_dict[parent_requirement]['num_to_keep'] > counter:
-                    partial_output_file_list.append(temp_file)
-                    partial_output_file_list_qc.append(qc_values)
-                    etag_dict[temp_file] = temp_requirement_etag_list[j]
-                    metadata_dict[temp_file] = temp_requirements_metadata_list[j]
-                    counter += 1
-                else:
-                    #Check which of the existing files has the worst QC values
-                    worst_existing_file_qc = partial_output_file_list_qc[0]
-                    worst_existing_file_qc_index = 0
-                    for qc_ind, temp_qc_partial in enumerate(partial_output_file_list_qc):
-                        for temp_qc_item in range(len(partial_output_file_list_qc[0])):
-                            #print('temp_qc_partial {}'.format(temp_qc_partial))
-                            #print('qc_ind {}'.format(qc_ind))
-                            #If QC measure is worse in the current file, then remark this as the worst file
-                            if temp_qc_partial[temp_qc_item] > worst_existing_file_qc[temp_qc_item]:
-                                worst_existing_file_qc_index = qc_ind
-                                worst_existing_file_qc = partial_output_file_list_qc[qc_ind]
-                                break
-                            #If QC measure is the same in the current file, check the next item
-                            elif temp_qc_partial[temp_qc_item] == worst_existing_file_qc[temp_qc_item]:
-                                continue
-                            #If QC measure is better in the current file, move on to the next file
-                            else:
-                                break
-                                
-                    #See if the current file is better/worse than the worst file
-                    for temp_qc_item in range(len(worst_existing_file_qc)):
-                        
-                        #If new file is better, then update the file list with the
-                        #current file
-                        if worst_existing_file_qc[temp_qc_item] > qc_values[temp_qc_item]:
-                            del etag_dict[partial_output_file_list[worst_existing_file_qc_index]]
-                            del metadata_dict[partial_output_file_list[worst_existing_file_qc_index]]
-                            etag_dict[temp_file] = temp_requirement_etag_list[j]
-                            metadata_dict[temp_file] = temp_requirements_metadata_list[j]
-                            partial_output_file_list[worst_existing_file_qc_index] = temp_file
-                            partial_output_file_list_qc[worst_existing_file_qc_index] = qc_values
-                            break
-                        #If new file is worse, then move on and ignore the current file
-                        elif worst_existing_file_qc[temp_qc_item] > qc_values[temp_qc_item]:
-                            break
-                        #If the two files are the same, check the next QC file. If the QC values
-                        #are the same across the board, the one that has the lowest ranking in
-                        #alphabetical order will be chosen.
-                        else:
-                            continue
-        
-        output_file_list = output_file_list + partial_output_file_list
-        
-    #Also find all the various files that are associated with the requirements
-    if type(associated_files_dict) != type(None):
-        client = create_page_iterator(bucket = bucket, prefix = full_prefix, bucket_config = bids_bucket_config, return_client_instead = True)
-        
-        # Create a reusable Paginator
-        paginator = client.get_paginator('list_objects')
-        # Create a PageIterator from the Paginator
-        page_iterator = paginator.paginate(Bucket=bucket, Prefix=prefix)
-        new_files = []
-        for temp_file in output_file_list:
-            for temp_key in associated_files_dict.keys():
-                if temp_key in temp_file:
-                    for temp_term in associated_files_dict[temp_key]:
-                        temp_file_path = os.path.join(prefix, subject_id, temp_file.replace(temp_key, temp_term))
-                        page_iterator = paginator.paginate(Bucket=bucket, Prefix=temp_file_path)
-                        for page in page_iterator:
-                            if 'Contents' in page:
-                                for temp_dict in page['Contents']:
-                                    new_file_name = temp_dict['Key'].split(subject_with_slashes)[-1]
-                                    new_files.append(new_file_name)
-                                    etag_dict[new_file_name] = temp_dict['ETag'].split(subject_with_slashes)[-1]
-                                    metadata_dict[new_file_name] = temp_dict
-
-        output_file_list = list(set(output_file_list + new_files))
-        output_file_list.sort()
-
-    for a in metadata_dict.keys():
-        for b in metadata_dict[a].keys():
-             if isinstance(metadata_dict[a][b], datetime.datetime):
-                metadata_dict[a][b] = metadata_dict[a][b].isoformat()
-
-    return output_file_list, metadata_dict
 
 def is_qc_info_required(requirement_dictionary):
     '''Return True if QC info is required for any given requirement'''
@@ -1302,7 +936,7 @@ def find_current_cbrain_tasks(cbrain_api_token, data_provider_id = None):
         return tasks_to_return
 
 
-def find_cbrain_files_on_dp(cbrain_api_token, data_provider_id = 710):
+def find_cbrain_files(cbrain_api_token):
     '''Returns list of files on data provider
     
     Parameters
@@ -1310,13 +944,10 @@ def find_cbrain_files_on_dp(cbrain_api_token, data_provider_id = 710):
     
     cbrain_api_token : str
         The CBRAIN API token for the current session
-    data_provider_id : int
-        Data provider ID to restrict files to
         
     Returns
     -------
     list of dictionaries with info on all CBRAIN files
-    existing on the specified data provider
     
     '''
     base_url = 'https://portal.cbrain.mcgill.ca'
@@ -2452,15 +2083,23 @@ def check_if_ancestor_file_selection_is_same(subject_id, session_files, ancestor
     
     return True
 
-def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_ids, cbrain_api_token,
-                        group_id = '10367', user_id = '4022', bids_bucket_config = '/some/path',
-                        bids_bucket = 'hbcd-pilot', bids_bucket_prefix = 'assembly_bids',
-                        derivatives_bucket_config = '/some/path', derivatives_bucket = 'hbcd-pilot',
-                        derivatives_bucket_prefix = 'derivatives', bids_data_provider_id = 710,
-                        derivatives_data_provider_id = 0, ses_name = '',
-                        rerun_level = 1, logs_directory = None, logs_prefix = 'cbrain_misc', session_dp_dict = None,
-                        session_agnostic_files = ['sessions.tsv'], check_ancestor_pipelines = True,
-                        verbose = False, minimum_file_age_days = 14):
+def update_processing(pipeline_name = None,
+                        cbrain_api_token = None,
+                        session_data_provider_names = None,
+                        group_name = None,
+                        user_id = None,
+                        bids_bucket_config = None,
+                        bids_bucket_prefix = 'assembly_bids',
+                        bids_data_provider_name = None,
+                        derivatives_bucket_config = None,
+                        logs_directory = None,
+                        logs_prefix = 'cbrain_misc',
+                        rerun_level = 1,
+                        session_agnostic_files = ['sessions.tsv'],
+                        check_ancestor_pipelines = True,
+                        verbose = False,
+                        minimum_file_age_days = 14,
+                        max_subject_sessions_to_proc = None):
     
     '''Function to manage processing of data using CBRAIN
 
@@ -2530,45 +2169,32 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     pipeline_name : str
         Should be something like 'mriqc' or 'qsiprep' corresponding with
         the folder where pipeline outputs would be stored in the derivatives
-        bucket.
-    registered_and_s3_names : list of str
-        The names of subjects registered in CBRAIN and found in S3 data provider
-        that could potentially be processed
-    registered_and_s3_ids : list of str
-        Has the same ordering of registered_and_s3_names, and contains
-        the CBRAIN ids for each subject
+        bucket. This corresponds to the pipeline specific info for the primary
+        output in the BoutiquesForcedOutputBrowsePath of the boutiques that
+        is associated with processing.
     cbrain_api_token : str
-        The API token for your current CBRAIN session
-    group_id : str, default '10367'
-        The CBRAIN group to use for processing.
-    user_id : str, default '4022',
-        The CBRAIN user to use for processing.
+        The API token for your current CBRAIN session. Needs to be refreshed
+        periodically.
+    session_data_provider_names : list of str
+        The names of the CBRAIN DataProviders that are used for the session
+        specific data.
+    group_name : str
+        The CBRAIN group name associated with processing.
+    user_id : str,
+        The CBRAIN user ID associated with processing. To
+         find this, login to CBRAIN, go to "My Account",
+          and look at the 4 or 5 digit numeric ID in the
+           HTML address.
     bids_bucket_config : str, default '/some/path'
         The path to the s3 config file for the BIDS bucket
-    bids_bucket : str, default 'hbcd-pilot'
-        The name of the BIDS bucket
     bids_bucket_prefix : str, default 'assembly_bids'
         The folder(s) under the BIDS bucket where the top
         reference to the BIDS study-wide directory is found
-    derivatives_bucket_config : str, default '/some/path'
-        Same as BIDS bucket config, but for derivatives
-    derivatives_bucket : str, default 'hbcd-pilot'
-        Same as BIDS bucket, but for derivatives
-    derivatives_bucket_prefix : str, default 'derivatives'
-        Same as BIDS prefix, but for derivatives    
-    bids_data_provider_id : int, default 710
-        The CBRAIN DataProvider ID for the BIDS bucket
-    derivatives_data_provider_id : int, default 0
-        The CBRAIN DataProvider ID for the derivatives bucket
-    ses_name : str, default ''
-        Session to be processing (i.e. ses-V02)
-    rerun_level : 0, 1, 2, default 1
-        If 0, then the script will not rerun any subjects that already have
-        processing results in CBRAIN. If 1, then the script will rerun subjects
-        that have processing results in CBRAIN but only if the processing results
-        failed for CBRAIN/Cluster specific reasons. If 2, then the script will 
-        also rerun processing in cases where processing failed on the cluster or
-        in similar scenarios.
+    bids_data_provider_name : str
+        The CBRAIN DataProvider Name for where the BIDS data is stored
+    derivatives_bucket_config : str
+        Same as BIDS bucket config, but for derivatives. This can either
+        be the same or different as the BIDS bucket config.
     logs_directory : str or None, default None
         Working directory where scans.tsv files will be temporarily downloaded and
         also other logs describing subject processing before the logs are sent to
@@ -2578,11 +2204,13 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     logs_prefix : str, default 'cbrain_misc'
         The prefix to use when placing the logs file in the Bucket path associated
         with the Derivatives Data Provider.
-    session_dp_dict : dict
-        Keys represent session names (i.e. 'ses-V02') and values
-        are the corresponding DataProvider IDs that are used in
-        CBRAIN. CURRENTLY NOT USED. HOPEFULLY WILL LATER SPEED
-        UP PROCESSING....
+    rerun_level : 0, 1, 2, default 1
+        If 0, then the script will not rerun any subjects that already have
+        processing results in CBRAIN. If 1, then the script will rerun subjects
+        that have processing results in CBRAIN but only if the processing results
+        failed for CBRAIN/Cluster specific reasons. If 2, then the script will 
+        also rerun processing in cases where processing failed on the cluster or
+        in similar scenarios.
     session_agnostic_files : list of str, default ['sessions.tsv']
         This will probably not be adjusted by users. This field is
         used internally at several points to make sure the sessions.tsv
@@ -2597,6 +2225,13 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         The minimum number of days that a file must be old before
         it can be used for processing. Set to 0 if you don't want
         this to be influencing processing routines.
+    max_subject_sessions_to_proc : int, default None
+        The maximum number of processing jobs to launch (where each
+        session processed for a given subject is considered 1 proc).
+        Default behavior is to process all subjects found in the BIDS
+        Data Provider, or otherwise will only process the specified
+        number. Subjects that fail to meet preprocessing requirements
+        to not count to this total.
 
     Returns
     -------
@@ -2605,8 +2240,12 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     
     '''
 
-    if type(ses_name) == str:
-        ses_label = ses_name.split('-')[1]
+
+    group_id, bids_bucket, bids_data_provider_id, session_dps_dict = grab_cbrain_initialization_details(cbrain_api_token,
+                                                                                             group_name,
+                                                                                             bids_data_provider_name,
+                                                                                             session_data_provider_names)
+
 
     #Load the tool config id for the current pipeline being used for processing
     tool_config_file = os.path.join(Path(inspect.getfile(update_processing)).absolute().parent.resolve(), 'tool_config_ids.json')
@@ -2668,11 +2307,29 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
         raise ValueError('Error: This script was not designed to work for pipelines that take more than one BidsSubject inputs since the BidsSubject input will be replaced with an extended file list, and the script only knows how to generate one of these at a time.')
     ###################################################################################
         
-    #Grab some CBRAIN info that will be referenced for all subjects being processed ########
-    current_cbrain_tasks = find_current_cbrain_tasks(cbrain_api_token, data_provider_id = derivatives_data_provider_id) #this is bids_data_provider_id because we currently only support processing that grabs/saves from one DP
-    bids_data_provider_files = find_cbrain_files_on_dp(cbrain_api_token, data_provider_id = bids_data_provider_id)
-    derivs_data_provider_files = find_cbrain_files_on_dp(cbrain_api_token, data_provider_id = derivatives_data_provider_id)
+    #Grab CBRAIN Tasks that will later be referenced, and seperate them by results data provider ########
+    current_cbrain_tasks = find_current_cbrain_tasks(cbrain_api_token, data_provider_id = None) #this is bids_data_provider_id because we currently only support processing that grabs/saves from one DP
+    cbrain_session_tasks = {}
+    for temp_ses in session_dps_dict.keys():
+        temp_dp_id = session_dps_dict[temp_ses]['id']
+        cbrain_session_tasks[temp_ses] = list(filter(lambda f: temp_dp_id == f['results_data_provider_id'], current_cbrain_tasks))
+
+    #Grab CBRAIN Files that will later be referenced ##################################################
+    cbrain_files = find_cbrain_files(cbrain_api_token)
+    bids_data_provider_files = list(filter(lambda f: bids_data_provider_id == f['data_provider_id'], cbrain_files))
+    cbrain_deriv_files = {}
+    for temp_ses in session_dps_dict.keys():
+        temp_dp_id = session_dps_dict[temp_ses]['id']
+        cbrain_deriv_files[temp_ses] = list(filter(lambda f: session_dps_dict[temp_dp_id] == f['data_provider_id'], cbrain_files))
+        print("{} total files found under Derivatives data provider {}\n".format(len(cbrain_deriv_files[temp_ses]), temp_dp_id))
+
+    #Print out info about what files were found
+    print("{} total files found under BIDS data provider {}\n".format(len(bids_data_provider_files), bids_data_provider_id))
     ########################################################################################
+    
+    registered_and_s3_names, registered_and_s3_ids = find_potential_subjects_for_processing_v2(bids_data_provider_files, bids_bucket_config,
+                                                       bids_bucket = bids_bucket, bids_prefix = bids_bucket_prefix)
+    
     
     #A list to store details about why some subjects were processed
     #and others were not
@@ -2683,256 +2340,274 @@ def update_processing(pipeline_name, registered_and_s3_names, registered_and_s3_
     final_subjects_ids_for_proc = [] #list of subjects that fullfill requirements for processing
     final_subjects_names_for_proc = [] #list of subjects that fullfill requirements for processing
     metadata_dicts_list = [] #list for keeping track of s3 file identifiers
+    subject_sessions_launched = 0
     for i, temp_subject in enumerate(registered_and_s3_names):
-        print('Evaluating: {}'.format(temp_subject))
+        for j, temp_ses in enumerate(session_dps_dict.keys()):
+
+            #This should always be something like 'ses-V01', 'ses-V02', etc.
+            temp_ses_name = session_dps_dict[temp_ses]['prefix'].split('/')[-1]
+
+            #Before gathering information about the current subject and session,
+            #check if we have already processed the maximum number of subjects.
+            if type(max_subject_sessions_to_proc) != type(None):
+                if subject_sessions_launched >= max_subject_sessions_to_proc:
+                    break
         
-        #A dictionary to store details that will later be used to populate
-        #a spreadsheet that will be used to track processing across subjects
-        if 'subject_processing_details' in locals():
-            study_processing_details.append(subject_processing_details)
+            print('Evaluating: {}'.format(temp_subject))
+            
+            #A dictionary to store details that will later be used to populate
+            #a spreadsheet that will be used to track processing across subjects
+            if 'subject_processing_details' in locals():
+                study_processing_details.append(subject_processing_details)
 
-
-        subject_processing_details = {}
-        subject_processing_details['subject'] = temp_subject
-        subject_processing_details['pipeline'] = pipeline_name
-        subject_processing_details['session'] = ses_name
-        subject_processing_details['derivatives_found'] = "Not Evaluated"
-        subject_processing_details['CBRAIN_Status'] = "Not Evaluated"
-        subject_processing_details['scans_tsv_present'] = "Not Evaluated"
-        subject_processing_details['Ancestor_Files'] = "Not Evaluated"
-        
-        #Be sure that the current subject doesn't have existing output before starting processing
-        subject_derivatives_prefix = os.path.join(derivatives_bucket_prefix, pipeline_name, temp_subject) #derivatives_bucket_prefix currently includes session info
-        if file_exists_under_prefix(derivatives_bucket, subject_derivatives_prefix, derivatives_bucket_config):
-            subject_processing_details['derivatives_found'] = True
-            for temp_req in file_selection_dict.keys():
-                subject_processing_details[temp_req] = 'Already Processed'
-            for temp_req in external_requirements_dict.keys():
-                subject_processing_details['CBRAIN_' + temp_req] = 'Already Processed'
-            subject_processing_details['CBRAIN_Status'] = 'Already Processed'
-            subject_processing_details['scans_tsv_present'] = "Already Processed"
-
-            print('    Already has derivatives')
-            continue
-        else:
-            subject_processing_details['derivatives_found'] = False
-
-        #Check what type of processing has already occured for the subject with
-        #this pipeline and only continue if processing hasn't already been initiated
-        #or under certain failure conditions (see documentation for check_rerun_status)
-        to_rerun, example_status = check_rerun_status(registered_and_s3_ids[i], current_cbrain_tasks, derivatives_data_provider_id, tool_config_id, rerun_level = rerun_level)
-        subject_processing_details['CBRAIN_Status'] = example_status
-        if False == to_rerun:
-            continue #Check rerun status will print out a message to the user if processing is not going to be rerun
-
-        #Grab the QC file for this subject so we can figure out which files can be used for processing.
-        #If no QC requirements are specified in the comprehensive processing prerequisites, then the QC file will be ignored.
-        if type(logs_directory) != type(None):
-            subj_ses_qc_file_path = download_scans_tsv_file(bids_bucket_config, logs_directory, temp_subject, ses_name, bids_prefix = 'assembly_bids', bucket = bids_bucket, client = None)
-            if (type(subj_ses_qc_file_path) == type(None)) and (qc_info_required == True):
-                print('    Skipping Processing - No QC file found for subject')
-                subject_processing_details['scans_tsv_present'] = False
+            subject_processing_details = {}
+            subject_processing_details['subject'] = temp_subject
+            subject_processing_details['pipeline'] = pipeline_name
+            subject_processing_details['session'] = temp_ses_name
+            subject_processing_details['derivatives_found'] = "Not Evaluated"
+            subject_processing_details['CBRAIN_Status'] = "Not Evaluated"
+            subject_processing_details['scans_tsv_present'] = "Not Evaluated"
+            subject_processing_details['Ancestor_Files'] = "Not Evaluated"
+            
+            #Be sure that the current subject doesn't have existing output before starting processing
+            subject_derivatives_prefix = os.path.join(session_dps_dict[temp_ses]['prefix'], pipeline_name, temp_subject) #derivatives_bucket_prefix currently includes session info
+            if file_exists_under_prefix(session_dps_dict[temp_ses]['bucket'], subject_derivatives_prefix, derivatives_bucket_config):
+                subject_processing_details['derivatives_found'] = True
                 for temp_req in file_selection_dict.keys():
-                    subject_processing_details[temp_req] = 'No scans.tsv'
+                    subject_processing_details[temp_req] = 'Already Processed'
                 for temp_req in external_requirements_dict.keys():
-                    subject_processing_details['CBRAIN_' + temp_req] = 'No scans.tsv'
-                subject_processing_details['CBRAIN_Status'] = 'No scans.tsv'
-                subject_processing_details['derivatives_found'] = "No (Missing scans.tsv)"
+                    subject_processing_details['CBRAIN_' + temp_req] = 'Already Processed'
+                subject_processing_details['CBRAIN_Status'] = 'Already Processed'
+                subject_processing_details['scans_tsv_present'] = "Already Processed"
+
+                print('    Already has derivatives')
                 continue
             else:
-                subject_processing_details['scans_tsv_present'] = True
-                if qc_info_required == False:
-                    subj_ses_qc_file = None
-                else:
-                    subj_ses_qc_file = pd.read_csv(subj_ses_qc_file_path, delimiter = '\t')
-                    os.remove(subj_ses_qc_file_path)
-        else:
-            subj_ses_qc_file = None
+                subject_processing_details['derivatives_found'] = False
 
+            #Check what type of processing has already occured for the subject with
+            #this pipeline and only continue if processing hasn't already been initiated
+            #or under certain failure conditions (see documentation for check_rerun_status)
+            to_rerun, example_status = check_rerun_status(registered_and_s3_ids[i], cbrain_session_tasks[temp_ses], session_dps_dict[temp_ses]['id'], tool_config_id, rerun_level = rerun_level)
+            subject_processing_details['CBRAIN_Status'] = example_status
+            if False == to_rerun:
+                continue #Check rerun status will print out a message to the user if processing is not going to be rerun
 
-        #Grab a list of BIDS associated files for this subject in S3
-        try:
-            subject_files = grab_subject_file_info(temp_subject, bids_bucket_config, bucket = bids_bucket, prefix = bids_bucket_prefix)
-        except Exception as error:
-            print(error)
-            raise RuntimeError('Error: unable to grab file names for S3 for current subject. This likely means S3 access is having issues.')
-        if len(subject_files) == 0:
-            print('   Warning: No S3 files found for subject')
-
-        #Reduce the files to those that are relevant for
-        #the current session being processed
-        session_level = len(bids_bucket_prefix.split('/')) + 1 
-        session_files = grab_session_specific_file_info(subject_files, ses_name,
-                            session_agnostic_files = session_agnostic_files,
-                            session_level = session_level)
-        if len(session_files) == 0:
-            print('   No files found for subject/session combo')
-            continue
-
-
-        #First run preliminary check for requirements that is only used
-        #for the purpose of populating the processing details spreadsheet.
-        #Later requirements check will actually be used to determine if 
-        #processing will be attempted.
-        temp_req_output, req_tracking_dict = check_bids_requirements_v2(temp_subject, session_files, file_selection_dict,
-                               qc_df = subj_ses_qc_file, bucket = bids_bucket, prefix = bids_bucket_prefix,
-                               bids_bucket_config = bids_bucket_config, session = ses_name,
-                               session_agnostic_files = session_agnostic_files,
-                               verbose = verbose)
-        subject_processing_details.update(req_tracking_dict)
-            
-        #Check that the subject has requirements satisfiying at least one pipeline specific json in the processing_prerequisites folder
-        requirements_satisfied = 0
-        none_found = 0
-        for temp_requirement in requirements_dicts:
-            temp_req_output, _ = check_bids_requirements_v2(temp_subject, session_files, temp_requirement,
-                        qc_df = subj_ses_qc_file, bucket = bids_bucket, prefix = bids_bucket_prefix,
-                        bids_bucket_config = bids_bucket_config, session = ses_name,
-                        session_agnostic_files = session_agnostic_files,
-                        verbose = verbose)
-            #If return == None, this is because some QC info was expected but is missing
-            if type(temp_req_output) == type(None):
-                none_found = 1
-            #Otherwise, a requirement was either passed or failed as expected
-            else:
-                requirements_satisfied += int(temp_req_output)
-            
-        if (requirements_satisfied == 0) or (none_found == 1):
-            print('    Requirements not satisfied')
-            subject_processing_details['derivatives_found'] = "No (Missing BIDS Reqs)"
-            subject_processing_details['CBRAIN_Status'] = "No Proc. (Missing BIDS Reqs)"
-            continue
-            
-        #Check that the external requirements are satisfied for the subject (these are pipeline inputs that will be files/file collections
-        #that should already be available for the subject on CBRAIN if the subject is ready for processing). Note that
-        #the files being passed to this function are already specific to a single data provider.
-        subject_external_requirements, req_tracking_dict = grab_external_requirements(temp_subject, bids_data_provider_files + derivs_data_provider_files,
-                                                                    external_requirements_dict, bids_data_provider_id = bids_data_provider_id,
-                                                                    derivatives_data_provider_id = derivatives_data_provider_id) #implement function for this...
-        
-        #Update tracking dict based on grab_external_requirements results
-        for temp_key in req_tracking_dict.keys():
-            subject_processing_details['CBRAIN_' + temp_key] = req_tracking_dict[temp_key]
-        
-        #Skip processing for subject if external requirements aren't found
-        if subject_external_requirements is None:
-            print('    Missing external requirements')
-            subject_processing_details['derivatives_found'] = "No (Missing Derived Reqs)"
-            subject_processing_details['CBRAIN_Status'] = "No Proc. (Missing Derived Reqs)"
-            continue #skip processing if external requirements aren't found
-            
-        #Grab files for the subject according to pipeline specific jsons in processing_file_numbers and processing_file_selection folders
-        subject_files_list, metadata_dict = grab_required_bids_files_v2(temp_subject, session_files, file_selection_dict,
-                                                                        qc_df = subj_ses_qc_file, bucket = bids_bucket,
-                                                                        prefix = bids_bucket_prefix,
-                                                                        bids_bucket_config = bids_bucket_config,
-                                                                        session = ses_name, session_agnostic_files = session_agnostic_files,
-                                                                        associated_files_dict = associated_files_dict,
-                                                                        verbose = False)
-        
-        #Check if all files are old enough for processing. Generally we will
-        #want to wait several days before processing to be sure that there is
-        #time for the QC information to get populated
-        files_old_enough = check_all_files_old_enough(metadata_dict, minimum_file_age_days, 
-                               file_patterns_to_ignore = session_agnostic_files,
-                               verbose = False)
-        if files_old_enough == False:
-            print('    Files not old enough for processing')
-            subject_processing_details['derivatives_found'] = "No (Files Not Old Enough)"
-            subject_processing_details['CBRAIN_Status'] = "No Proc. (Files Not Old Enough)"
-            continue
-        
-        #Go through all "ancestor" processing requirements, and ensure
-        #that the files that would be selected for processing today are
-        #the same as the files that were selected when the ancestor
-        #pipelines were ran. If this is not the case, then processing
-        #of this subject will be paused until the ancestor pipelines are rerun.
-        if check_ancestor_pipelines:
-            if len(ancestor_pipelines) > 0:
-                are_ancestors_the_same = check_if_ancestor_file_selection_is_same(temp_subject, session_files, ancestor_pipelines_file_selection_dict, qc_df = subj_ses_qc_file,
-                                                            bids_bucket = bids_bucket, bids_prefix = bids_bucket_prefix, bids_bucket_config = bids_bucket_config,
-                                                            session = ses_name, session_agnostic_files = session_agnostic_files, associated_files_dict = associated_files_dict,
-                                                            verbose = verbose, derivatives_bucket_config = derivatives_bucket_config, derivatives_bucket = derivatives_bucket,
-                                                            derivatives_bucket_prefix = derivatives_bucket_prefix, logs_directory = logs_directory)
-                if are_ancestors_the_same == False:
-                    print('    Pausing processing until ancestor pipelines are rerun')
-                    subject_processing_details['derivatives_found'] = "No (Ancestor Files Different)"
-                    subject_processing_details['CBRAIN_Status'] = "No Proc. (Ancestor Files Different)"
-                    subject_processing_details['Ancestor_Files'] = 'Different'
+            #Grab the QC file for this subject so we can figure out which files can be used for processing.
+            #If no QC requirements are specified in the comprehensive processing prerequisites, then the QC file will be ignored.
+            if type(logs_directory) != type(None):
+                subj_ses_qc_file_path = download_scans_tsv_file(bids_bucket_config, logs_directory, temp_subject, temp_ses, bids_prefix = 'assembly_bids', bucket = bids_bucket, client = None)
+                if (type(subj_ses_qc_file_path) == type(None)) and (qc_info_required == True):
+                    print('    Skipping Processing - No QC file found for subject')
+                    subject_processing_details['scans_tsv_present'] = False
+                    for temp_req in file_selection_dict.keys():
+                        subject_processing_details[temp_req] = 'No scans.tsv'
+                    for temp_req in external_requirements_dict.keys():
+                        subject_processing_details['CBRAIN_' + temp_req] = 'No scans.tsv'
+                    subject_processing_details['CBRAIN_Status'] = 'No scans.tsv'
+                    subject_processing_details['derivatives_found'] = "No (Missing scans.tsv)"
                     continue
                 else:
-                    subject_processing_details['Ancestor_Files'] = 'Same'
+                    subject_processing_details['scans_tsv_present'] = True
+                    if qc_info_required == False:
+                        subj_ses_qc_file = None
+                    else:
+                        subj_ses_qc_file = pd.read_csv(subj_ses_qc_file_path, delimiter = '\t')
+                        os.remove(subj_ses_qc_file_path)
+            else:
+                subj_ses_qc_file = None
 
+
+            #Grab a list of BIDS associated files for this subject in S3
+            try:
+                subject_files = grab_subject_file_info(temp_subject, bids_bucket_config, bucket = bids_bucket, prefix = bids_bucket_prefix)
+            except Exception as error:
+                print(error)
+                raise RuntimeError('Error: unable to grab file names for S3 for current subject. This likely means S3 access is having issues.')
+            if len(subject_files) == 0:
+                print('   Warning: No S3 files found for subject')
+
+            #Reduce the files to those that are relevant for
+            #the current session being processed
+            session_level = len(bids_bucket_prefix.split('/')) + 1 
+            session_files = grab_session_specific_file_info(subject_files, temp_ses,
+                                session_agnostic_files = session_agnostic_files,
+                                session_level = session_level)
+            if len(session_files) == 0:
+                print('   No files found for subject/session combo')
+                continue
+
+
+            #First run preliminary check for requirements that is only used
+            #for the purpose of populating the processing details spreadsheet.
+            #Later requirements check will actually be used to determine if 
+            #processing will be attempted.
+            temp_req_output, req_tracking_dict = check_bids_requirements_v2(temp_subject, session_files, file_selection_dict,
+                                qc_df = subj_ses_qc_file, bucket = bids_bucket, prefix = bids_bucket_prefix,
+                                bids_bucket_config = bids_bucket_config, session = temp_ses,
+                                session_agnostic_files = session_agnostic_files,
+                                verbose = verbose)
+            subject_processing_details.update(req_tracking_dict)
+                
+            #Check that the subject has requirements satisfiying at least one pipeline specific json in the processing_prerequisites folder
+            requirements_satisfied = 0
+            none_found = 0
+            for temp_requirement in requirements_dicts:
+                temp_req_output, _ = check_bids_requirements_v2(temp_subject, session_files, temp_requirement,
+                            qc_df = subj_ses_qc_file, bucket = bids_bucket, prefix = bids_bucket_prefix,
+                            bids_bucket_config = bids_bucket_config, session = temp_ses,
+                            session_agnostic_files = session_agnostic_files,
+                            verbose = verbose)
+                #If return == None, this is because some QC info was expected but is missing
+                if type(temp_req_output) == type(None):
+                    none_found = 1
+                #Otherwise, a requirement was either passed or failed as expected
+                else:
+                    requirements_satisfied += int(temp_req_output)
+                
+            if (requirements_satisfied == 0) or (none_found == 1):
+                print('    Requirements not satisfied')
+                subject_processing_details['derivatives_found'] = "No (Missing BIDS Reqs)"
+                subject_processing_details['CBRAIN_Status'] = "No Proc. (Missing BIDS Reqs)"
+                continue
+                
+            #Check that the external requirements are satisfied for the subject (these are pipeline inputs that will be files/file collections
+            #that should already be available for the subject on CBRAIN if the subject is ready for processing). Note that
+            #the files being passed to this function are already specific to a single data provider.
+            subject_external_requirements, req_tracking_dict = grab_external_requirements(temp_subject, bids_data_provider_files + cbrain_deriv_files[temp_ses],
+                                                                        external_requirements_dict, bids_data_provider_id = bids_data_provider_id,
+                                                                        derivatives_data_provider_id = session_dps_dict[temp_ses]['id']) #implement function for this...
             
-        
+            #Update tracking dict based on grab_external_requirements results
+            for temp_key in req_tracking_dict.keys():
+                subject_processing_details['CBRAIN_' + temp_key] = req_tracking_dict[temp_key]
+            
+            #Skip processing for subject if external requirements aren't found
+            if subject_external_requirements is None:
+                print('    Missing external requirements')
+                subject_processing_details['derivatives_found'] = "No (Missing Derived Reqs)"
+                subject_processing_details['CBRAIN_Status'] = "No Proc. (Missing Derived Reqs)"
+                continue #skip processing if external requirements aren't found
+                
+            #Grab files for the subject according to pipeline specific jsons in processing_file_numbers and processing_file_selection folders
+            subject_files_list, metadata_dict = grab_required_bids_files_v2(temp_subject, session_files, file_selection_dict,
+                                                                            qc_df = subj_ses_qc_file, bucket = bids_bucket,
+                                                                            prefix = bids_bucket_prefix,
+                                                                            bids_bucket_config = bids_bucket_config,
+                                                                            session = temp_ses, session_agnostic_files = session_agnostic_files,
+                                                                            associated_files_dict = associated_files_dict,
+                                                                            verbose = False)
+            
+            #Check if all files are old enough for processing. Generally we will
+            #want to wait several days before processing to be sure that there is
+            #time for the QC information to get populated
+            files_old_enough = check_all_files_old_enough(metadata_dict, minimum_file_age_days, 
+                                file_patterns_to_ignore = session_agnostic_files,
+                                verbose = False)
+            if files_old_enough == False:
+                print('    Files not old enough for processing')
+                subject_processing_details['derivatives_found'] = "No (Files Not Old Enough)"
+                subject_processing_details['CBRAIN_Status'] = "No Proc. (Files Not Old Enough)"
+                continue
+            
+            #Go through all "ancestor" processing requirements, and ensure
+            #that the files that would be selected for processing today are
+            #the same as the files that were selected when the ancestor
+            #pipelines were ran. If this is not the case, then processing
+            #of this subject will be paused until the ancestor pipelines are rerun.
+            if check_ancestor_pipelines:
+                if len(ancestor_pipelines) > 0:
+                    are_ancestors_the_same = check_if_ancestor_file_selection_is_same(temp_subject, session_files, ancestor_pipelines_file_selection_dict, qc_df = subj_ses_qc_file,
+                                                                bids_bucket = bids_bucket, bids_prefix = bids_bucket_prefix, bids_bucket_config = bids_bucket_config,
+                                                                session = temp_ses, session_agnostic_files = session_agnostic_files, associated_files_dict = associated_files_dict,
+                                                                verbose = verbose, derivatives_bucket_config = derivatives_bucket_config, derivatives_bucket = session_dps_dict[temp_ses]['bucket'],
+                                                                derivatives_bucket_prefix = session_dps_dict[temp_ses]['prefix'], logs_directory = logs_directory)
+                    if are_ancestors_the_same == False:
+                        print('    Pausing processing until ancestor pipelines are rerun')
+                        subject_processing_details['derivatives_found'] = "No (Ancestor Files Different)"
+                        subject_processing_details['CBRAIN_Status'] = "No Proc. (Ancestor Files Different)"
+                        subject_processing_details['Ancestor_Files'] = 'Different'
+                        continue
+                    else:
+                        subject_processing_details['Ancestor_Files'] = 'Same'
 
-        if type(subject_files_list) == type(None): #Guessing this never happens?
-            print('    scans.tsv missing one or more acquisitions. Skipping processing.')
-            continue
+                
+            
 
-        #Save subject information with other subjects that are ready for processing
-        all_to_keep_lists.append(subject_files_list)
-        metadata_dicts_list.append(metadata_dict)
-        subject_external_requirements_list.append(subject_external_requirements)
-        final_subjects_ids_for_proc.append(registered_and_s3_ids[i])
-        final_subjects_names_for_proc.append(temp_subject)
-        print('    Processing will be attempted')
-        subject_processing_details['CBRAIN_Status'] = 'Initiating Processing'
+            if type(subject_files_list) == type(None): #Guessing this never happens?
+                print('    scans.tsv missing one or more acquisitions. Skipping processing.')
+                continue
 
-    #Update the study processing details dict for the last subject
-    if 'subject_processing_details' in locals():
-        study_processing_details.append(subject_processing_details)
-    
+            #Save subject information with other subjects that are ready for processing
+            all_to_keep_lists.append(subject_files_list)
+            metadata_dicts_list.append(metadata_dict)
+            subject_external_requirements_list.append(subject_external_requirements)
+            final_subjects_ids_for_proc.append(registered_and_s3_ids[i])
+            final_subjects_names_for_proc.append(temp_subject)
+            print('    Processing will be attempted')
+            subject_processing_details['CBRAIN_Status'] = 'Initiating Processing'
+
+            #Update the study processing details dict for the last subject
+            if 'subject_processing_details' in locals():
+                study_processing_details.append(subject_processing_details)
+
+            ########################################################################
+            ########################################################################
+            #If script gets to this point for a given subject, session, and pipeline,
+            #then try to launch a job for processing in CBRAIN.
+            #########################################################################
+            #########################################################################
+            print('    Processing {} with {} via API'.format(final_subjects_names_for_proc[i], pipeline_name))
+
+
+            #Run "mark as newer" to be sure the latest version of the subject data
+            #is in the local CBRAIN cache once processing begins##################
+            try:
+                for temp_key in subject_external_requirements_list[i].keys():
+                    cbrain_mark_as_newer(subject_external_requirements_list[i][temp_key], cbrain_api_token)                
+
+                #Launch Processing
+                status, json_for_logging = launch_task_concise_dict(pipeline_name, subject_external_requirements_list[i], cbrain_api_token, data_provider_id = session_dps_dict[temp_ses]['id'],
+                                            group_id = group_id, user_id = user_id, task_description = '{} via API'.format(final_subjects_names_for_proc[i]),
+                                            all_to_keep = all_to_keep_lists[i], session_label = temp_ses.split('-')[1])
+            except:
+                print('Error encountered while trying to submit job for processing. This is likely a networking issue. Will try again in 5 seconds.')
+                time.sleep(5) #wait 5 seconds and try again
+                for temp_key in subject_external_requirements_list[i].keys():
+                    cbrain_mark_as_newer(subject_external_requirements_list[i][temp_key], cbrain_api_token)                
+
+                #Launch Processing
+                status, json_for_logging = launch_task_concise_dict(pipeline_name, subject_external_requirements_list[i], cbrain_api_token, data_provider_id = session_dps_dict[temp_ses]['id'],
+                                            group_id = group_id, user_id = user_id, task_description = '{} via API'.format(final_subjects_names_for_proc[i]),
+                                            all_to_keep = all_to_keep_lists[i], session_label = temp_ses.split('-')[1])
+            #######################################################################
+            
+            json_for_logging['s3_metadata'] = metadata_dicts_list[i]
+            if status == False:
+                raise ValueError('Error CBRAIN processing tasked was not submitted for {}. Issue must be resolved for processing to continue.'.format(final_subjects_names_for_proc[i]))
+            else:
+                if type(logs_directory) != type(None):
+                    log_file_name = os.path.join(logs_directory, '{}_{}_UMNProcSubmission.json'.format(final_subjects_names_for_proc[i], pipeline_name))
+                    with open(log_file_name, 'w') as f:
+                        json.dump(json_for_logging, f, indent = 4)
+                    #derivatives_bucket_prefix
+                    upload_processing_config_log(log_file_name, bucket = session_dps_dict[temp_ses]['bucket'], prefix = os.path.join(session_dps_dict[temp_ses]['prefix'], logs_prefix), bucket_config = derivatives_bucket_config)
+                    os.remove(log_file_name)
+
+            if type(max_subject_sessions_to_proc) != type(None):
+                subject_sessions_launched += 1
+            
        
     #################################################################################################
     #################################################################################################
     #Iterate through all subjects who were deemed ready for processing,
     # and submit task to process their data in CBRAIN.
-    print('\n\n')
-    for i, temp_subject in enumerate(final_subjects_ids_for_proc):  
-        print('Processing {} with {} via API'.format(final_subjects_names_for_proc[i], pipeline_name))
-
-
-        #Run "mark as newer" to be sure the latest version of the subject data
-        #is in the local CBRAIN cache once processing begins##################
-        try:
-            for temp_key in subject_external_requirements_list[i].keys():
-                cbrain_mark_as_newer(subject_external_requirements_list[i][temp_key], cbrain_api_token)                
-
-            #Launch Processing
-            status, json_for_logging = launch_task_concise_dict(pipeline_name, subject_external_requirements_list[i], cbrain_api_token, data_provider_id = derivatives_data_provider_id,
-                                        group_id = group_id, user_id = user_id, task_description = '{} via API'.format(final_subjects_names_for_proc[i]),
-                                        all_to_keep = all_to_keep_lists[i], session_label = ses_label)
-        except:
-            print('Error encountered while trying to submit job for processing. This is likely a networking issue. Will try again in 5 seconds.')
-            time.sleep(5) #wait 5 seconds and try again
-            for temp_key in subject_external_requirements_list[i].keys():
-                cbrain_mark_as_newer(subject_external_requirements_list[i][temp_key], cbrain_api_token)                
-
-            #Launch Processing
-            status, json_for_logging = launch_task_concise_dict(pipeline_name, subject_external_requirements_list[i], cbrain_api_token, data_provider_id = derivatives_data_provider_id,
-                                        group_id = group_id, user_id = user_id, task_description = '{} via API'.format(final_subjects_names_for_proc[i]),
-                                        all_to_keep = all_to_keep_lists[i], session_label = ses_label)
-        #######################################################################
-        
-        json_for_logging['s3_metadata'] = metadata_dicts_list[i]
-        if status == False:
-            raise ValueError('Error CBRAIN processing tasked was not submitted for {}. Issue must be resolved for processing to continue.'.format(final_subjects_names_for_proc[i]))
-        else:
-            if type(logs_directory) != type(None):
-                log_file_name = os.path.join(logs_directory, '{}_{}_UMNProcSubmission.json'.format(final_subjects_names_for_proc[i], pipeline_name))
-                with open(log_file_name, 'w') as f:
-                    json.dump(json_for_logging, f, indent = 4)
-                #derivatives_bucket_prefix
-                upload_processing_config_log(log_file_name, bucket = derivatives_bucket, prefix = os.path.join(derivatives_bucket_prefix, logs_prefix), bucket_config = derivatives_bucket_config)
-                os.remove(log_file_name)
-
     
     study_tracking_df = pd.DataFrame.from_dict(study_processing_details)
     if type(logs_directory) != type(None):
-        log_csv_name = os.path.join(logs_directory, 'processing_details_{}_{}.csv'.format(pipeline_name, ses_label))
-        log_html_name = os.path.join(logs_directory, 'processing_details_{}_{}.html'.format(pipeline_name, ses_label))
-        study_tracking_df = html_tools.reformat_df_and_produce_proc_html(study_tracking_df, pipeline_name, ses_label, log_html_name, file_selection_dict)
+        log_csv_name = os.path.join(logs_directory, 'processing_details_{}.csv'.format(pipeline_name))
+        log_html_name = os.path.join(logs_directory, 'processing_details_{}.html'.format(pipeline_name))
+        study_tracking_df = html_tools.reformat_df_and_produce_proc_html(study_tracking_df, pipeline_name, log_html_name, file_selection_dict)
         study_tracking_df.to_csv(log_csv_name, index = False)
 
     
