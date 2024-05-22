@@ -2280,7 +2280,8 @@ def update_processing(pipeline_name = None,
         print("      {} total files found under data provider".format(len(cbrain_deriv_files[temp_ses])))
 
     #Print out info about what files were found
-    print('\n   Processing will occur using BidsSubjects under the following DataProvider:\nName: {}, ID: {}, Bucket: {}, User Defined Prefix: {}'.format(bids_data_provider_name, bids_data_provider_id, bids_bucket, bids_bucket_prefix))
+    print('\n')
+    print('Processing will occur using BidsSubjects under the following DataProvider:\nName: {}, ID: {}, Bucket: {}, User Defined Prefix: {}'.format(bids_data_provider_name, bids_data_provider_id, bids_bucket, bids_bucket_prefix))
     print("      {} total files found under data provider".format(len(bids_data_provider_files)))
     ########################################################################################
     
