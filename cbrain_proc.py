@@ -2497,7 +2497,6 @@ def update_processing(pipeline_name = None,
             subject_external_requirements_list.append(subject_external_requirements)
             final_subjects_ids_for_proc.append(registered_and_s3_ids[i])
             final_subjects_names_for_proc.append(temp_subject)
-            print('    Processing will be attempted')
             subject_processing_details['CBRAIN_Status'] = 'Initiating Processing'
 
             #Update the study processing details dict for the last subject

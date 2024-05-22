@@ -96,7 +96,7 @@ def reformat_df_and_produce_proc_html(study_tracking_df, pipeline_name, output_h
 
 
     html = styler.to_html(index = False)
-    title = "Summary for HBCD session {} {} processing".format(pipeline_name)
+    title = "Summary for HBCD {} processing".format(pipeline_name)
     text_list = []
     text_list.append("The color coding for the subject label is a quick presentation of a subject's processing. Green indicates processing has been completed. Yellow indicates that processing wasn't attempted because some prerequisite file was missing. Red indicates failed attempts at processing.")
     text_list.append("It is important to remember that a failed processing task can be due to a variety of reasons including actual issues with how the pipeline is interacting with the imaging data, or data-agnostic issues within CBRAIN or MSI.")
