@@ -2248,7 +2248,8 @@ def update_processing(pipeline_name = None,
         external_requirements_dict = json.load(f)
     print('The external requirements dictionary for the current pipeline is as follows: {}\n'.format(external_requirements_dict))
     print('The full file selection dictionary (made up of the union of all requirements dictionaries) is as follows:')
-    print('{}\n'.format(file_selection_dict))
+    pretty_print_text = json.dumps(file_selection_dict, indent=4)
+    print('{}\n'.format(pretty_print_text))
     ##################################################################
         
         
