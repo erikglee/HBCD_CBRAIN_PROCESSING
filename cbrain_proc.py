@@ -2225,7 +2225,8 @@ def update_processing(pipeline_name = None,
     #Load the processing prerequisites for the current pipeline
     requirements_dicts, file_selection_dict = load_requirements_infos(pipeline_name)
     print('The following is a list of requirements dictionaries that will be used to determine whether a subject should be processed. If any one of these dictionaries is satisfied, processing will occur:')
-    print('{}\n'.format(requirements_dicts))
+    for i, temp_dict in enumerate(requirements_dicts):
+        print('({}) {}\n'.format(i, temp_dict))
 
     #If any of the requirements are dependent on QC info, return True
     #otherwise return false and allow processing even when QC file is missing
