@@ -1681,7 +1681,7 @@ def grab_required_bids_files_v2(subject_id, session_files, requirements_dict, qc
             #if 1:
             except Exception as error:
 
-                print('Found the following potential error: {}'.format(error))
+                print('    Found the following potential error: {}'.format(error))
                 
                 #I don't think this will ever occur
                 if type(qc_index) == type(None):
