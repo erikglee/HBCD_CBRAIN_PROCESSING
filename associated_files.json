@@ -4,5 +4,6 @@
                      "_sbref.bvec"],
     "_bold.nii.gz" : ["_sbref.nii.gz", "_sbref.json"],
     ".nii.gz" : [".json"],
+    "_sessions.tsv" : ["_sessions.json"],
     "eeg_sdfsdfsdfsdf" : ["eeg_sdsdfsdf"]
 }
