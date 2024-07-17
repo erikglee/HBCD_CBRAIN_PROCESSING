@@ -227,7 +227,7 @@ def grab_cbrain_initialization_details(cbrain_api_token, group_name, bids_data_p
 
 def find_cbrain_entities(cbrain_api_token, entity_type):
 
-    base_url = 'https://portal.cbrain.mcgill.ca'
+    base_url = 'https://portal.cbrain.mcgill.ca:4000'
     tasks = []
     tasks_request = {'cbrain_api_token': cbrain_api_token, 'page': 1, 'per_page': 1000}
 
