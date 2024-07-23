@@ -2375,7 +2375,7 @@ def update_processing(pipeline_name = None,
                     if qc_info_required == False:
                         subj_ses_qc_file = None
                     else:
-                        subj_ses_qc_file = pd.read_csv(subj_ses_qc_file_path, delimiter = '\t')
+                        subj_ses_qc_file = pd.read_csv(subj_ses_qc_file_path, delimiter = '\t', na_values=['_NaN_', '_Inf_'])
                     try:
                         os.remove(subj_ses_qc_file_path)
                     except:
