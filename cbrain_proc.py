@@ -1694,6 +1694,7 @@ def grab_required_bids_files_v2(subject_id, session_files, requirements_dict, qc
                         print('   No QC list was properly evaluated for this subject:')
                         print(error)
                         continue_loop = False
+                        return None, None
            
         #This should update be only be made once per parent requirement
         #after the while loop finishes
@@ -2463,6 +2464,15 @@ def update_processing(pipeline_name = None,
                                                                             session = temp_ses_name, session_agnostic_files = session_agnostic_files,
                                                                             associated_files_dict = associated_files_dict,
                                                                             verbose = False)
+            if type(subject_files_list) == type(None):
+                print('    An issue was encountered in grab_required_bids_files_v2. If processing has gotten to this point')
+                print('    it is likely the case that (1) the subject has at least some files that satisfy QC requirements,')
+                print('    but that, (2) at least one file is missing QC information for one category, making')
+                print('    a comparison of files within that category impossible. For this reason the subject')
+                print('    will not be processed at this time. Look at the subject scans.tsv file for relevant details')
+                subject_processing_details['derivatives_found'] = "No (scans.tsv issue)"
+                subject_processing_details['CBRAIN_Status'] = "No Proc. (scans.tsv issue)"
+                continue
             
             #Check if all files are old enough for processing. Generally we will
             #want to wait several days before processing to be sure that there is
