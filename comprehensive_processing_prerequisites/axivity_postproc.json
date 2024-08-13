@@ -1,0 +1,17 @@
+{
+
+    "LeftCalibration" : {"file_naming" : {"acq-calibration" : true,
+                                            "motion.tsv" : true,
+                                            "task-LeftLegMovement" : true}},
+    "RightCalibration" : {"file_naming" : {"acq-calibration" : true,
+                                            "motion.tsv" : true,
+                                            "task-RightLegMovement" : true}},
+    "LeftPrimary" : {"file_naming" : {"acq-primary" : true,
+                                        "motion.tsv" : true,
+                                        "task-LeftLegMovement" : true}},
+    "RightPrimary" : {"file_naming" : {"acq-primary" : true,
+                                        "motion.tsv" : true,
+                                        "task-RightLegMovement" : true}},
+    "sessions" : {"file_naming" : {"sessions.tsv" : true}}
+    
+}
