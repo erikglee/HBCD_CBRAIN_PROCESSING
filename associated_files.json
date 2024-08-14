@@ -6,5 +6,6 @@
     ".nii.gz" : [".json"],
     "_sessions.tsv" : ["_sessions.json"],
     "eeg_sdfsdfsdfsdf" : ["eeg_sdsdfsdf"],
-    "motion.tsv" : ["motion.json", "channels.json", "channels.tsv"]
+    "motion.tsv" : ["motion.json", "channels.json", "channels.tsv"],
+    "sessions.tsv" : ["sessions.json"]
 }

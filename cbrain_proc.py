@@ -1993,6 +1993,11 @@ def check_if_ancestor_file_selection_is_same(subject_id, session_files, ancestor
     in this file...
     
     '''
+
+    def remove_indices_by_suffix(strings_list, suffixes):
+        return [string for i, string in enumerate(strings_list) if not any(string.endswith(suffix) for suffix in suffixes)]
+
+
     
     
     for temp_pipeline in ancestor_pipelines_file_selection_dict.keys():
@@ -2018,10 +2023,14 @@ def check_if_ancestor_file_selection_is_same(subject_id, session_files, ancestor
             original_keys_sorted.sort()
             current_keys_sorted = list(current_file_metadata.keys())
             current_keys_sorted.sort()
-            if original_keys_sorted != current_keys_sorted:
+
+            original_keys_sorted_no_session_ag = remove_indices_by_suffix(original_keys_sorted, session_agnostic_files)
+            current_keys_sorted_no_session_ag  = remove_indices_by_suffix(current_keys_sorted, session_agnostic_files)
+
+            if original_keys_sorted_no_session_ag != current_keys_sorted_no_session_ag:
                 print('   Files that would be selected for {} processing today are different than what is found in the processing logs. Delete previous results and reprocess if you want to run the current pipeline.'.format(temp_pipeline))
-                print('   Files that were previously used: {}'.format(original_keys_sorted))
-                print('   Files that would be selected today: {}'.format(current_keys_sorted))
+                print('   Files that were previously used: {} (excluding session agnostic files)'.format(original_keys_sorted_no_session_ag))
+                print('   Files that would be selected today: {} (excluding session agnostic files)'.format(current_keys_sorted_no_session_ag))
                 
                 return False
             else:
@@ -2052,7 +2061,7 @@ def update_processing(pipeline_name = None,
                         logs_directory = None,
                         logs_prefix = 'cbrain_misc',
                         rerun_level = 1,
-                        session_agnostic_files = ['sessions.tsv'],
+                        session_agnostic_files = ['sessions.tsv', 'sessions.json'],
                         check_ancestor_pipelines = True,
                         verbose = False,
                         minimum_file_age_days = 14,
