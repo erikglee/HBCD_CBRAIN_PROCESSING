@@ -1,4 +1,5 @@
 {
     "bibsnet_work" : "session_label",
-    "axivity_postproc" : "session_id"
+    "axivity_postproc" : "session_id",
+    "made" : "SessionLabel"
 }
