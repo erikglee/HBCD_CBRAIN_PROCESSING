@@ -5,17 +5,18 @@ def fetch_json_data(tool_config_id, tool_name):
     url = 'https://portal.cbrain.mcgill.ca/tool_configs/{}/boutiques_descriptor.json'.format(tool_config_id)
     response = requests.get(url)
     if response.status_code == 200:
-        return response.json()
+        return response.json(), url
     else:
         raise Exception(f"Failed to fetch JSON data. Status code: {response.status_code}")
 
-def generate_rst(json_data, tool_config_id, tool_name):
+def generate_rst(json_data, tool_config_id, tool_name, url):
     # Example processing: create a new rst file using json data
     keys_to_query = ['name', 'description']
     with open('tool_details.rst', 'a') as f:
         initial_text = f"{tool_name} (CBRAIN Tool Config ID: {tool_config_id})\n"
         f.write(initial_text)
         f.write(f"{'='*len(initial_text)}\n\n")
+        f.write('Link to current boutiques descriptor `here <{}>`_\n'.format(url))
         f.write(".. list-table::\n")
         f.write("   :header-rows: 1\n\n")
         for temp_key in keys_to_query:
@@ -36,8 +37,8 @@ def main():
     with open('../../tool_config_ids.json') as f:
         tool_config_ids = json.load(f)
     for temp_tool in tools_for_documentation:
-        json_data = fetch_json_data(tool_config_ids[temp_tool], temp_tool)
-        generate_rst(json_data, tool_config_ids[temp_tool], temp_tool)
+        json_data, url = fetch_json_data(tool_config_ids[temp_tool], temp_tool)
+        generate_rst(json_data, tool_config_ids[temp_tool], temp_tool, url)
 
 if __name__ == "__main__":
     main()
