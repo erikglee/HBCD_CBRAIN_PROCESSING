@@ -1,0 +1,8 @@
+axivity_postproc
+hbcd_qc
+made
+mriqc
+nibabies
+osprey
+qsiprep
+xcp_d

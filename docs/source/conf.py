@@ -35,7 +35,13 @@ html_static_path = ['_static']
 
 import os
 import sys
+import subprocess
 sys.path.insert(0, os.path.abspath('.'))
-#sys.path.insert(0, os.path.abspath('../../postproc_code'))
+sys.path.insert(0, os.path.abspath('../../.'))
+#import grab_cbrain_tool_details
 
 autodoc_mock_imports = ["nibabel", "matplotlib", "numpy", "ants", "pandas", "scipy"]
+
+def setup(app):
+    # This will run 'generate_docs.py' before the documentation is built
+    subprocess.call(["python", "grab_cbrain_tool_details.py"])
