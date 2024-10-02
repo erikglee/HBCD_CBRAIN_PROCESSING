@@ -40,3 +40,4 @@ HBCD processing involves the following details:
    usage
    inputs_formatting
    outputs
+   tool_details
