@@ -22,6 +22,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
         for temp_key in keys_to_query:
             f.write(f"   * - {temp_key}\n")
             f.write(f"     - {json_data[temp_key]}\n")
+        f.write("\n\n")
 
 
 def main():
