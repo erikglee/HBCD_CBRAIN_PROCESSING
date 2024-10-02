@@ -36,7 +36,7 @@ HBCD processing involves the following details:
    :maxdepth: 1
    :caption: Contents:
 
-   installation
+   bids_details
    inputs_formatting
    outputs
    tool_details
