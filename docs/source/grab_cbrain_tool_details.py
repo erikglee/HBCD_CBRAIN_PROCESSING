@@ -18,6 +18,9 @@ def generate_rst(json_data):
 
 def main():
 
+    with open('docs/source/tool_details.rst', 'w') as f:
+        f.write('Tool Details\n')
+        f.write('============\n\n')
     with open('tools_to_feature_in_documentation.txt', 'r') as f:
         tools_for_documentation = [line.strip() for line in f]
     print(tools_for_documentation)
