@@ -6,6 +6,9 @@
 Welcome to the processing documentation for the Healthy Brain and Child Development (HBCD) Study!
 =================================================================================================
 
+WARNING THIS DOCUMENTATION IS A WORK IN PROGRESS AND MAJOR DETAILS
+ARE SUBJECT TO CHANGE AT ANY MOMENT.
+
 This documentation base is an overview of the tools and
 processing steps used in the HBCD study. At a high level,
 HBCD processing involves the following details:

@@ -32,7 +32,33 @@ as follows: ::
     │   │   ├── sub-<label>_ses-<label>_scans.tsv
     │   │   ├── sub-<label>_ses-<label>_scans.json
 
+First, as expected with a large infant study, many
+subjects will have missing data elements. Because of this,
+there will be a different number of folders and files available
+for unique subjects and sessions. Second, due to the multimodal
+nature of the HBCD acquisition, some of the modalities are collected
+at different times, and even within modality there may be certain
+acquisitions that are collected on different days.
 
+The complexity of the data acquisition and the varying image quality
+across acquisitions makes the scans.tsv file (found under the session
+folder) a critical component of the BIDS structure. This file contains
+information about when an acquisiton was collected, how old the participant
+was at the time of the acquisition, and other relevant information such as
+quality controls.
+
+The scans.tsv serves as the best source of information about the age of a
+participant at the time of an acquisition. Age information can also be found
+in the sessions.tsv file under the session folder, where "age" represents the
+age of the participant at the first in-person data collection. All "age" measures
+are provided in years with three decimal places, based on a birthdate measure
+that is jittered up to 7 days.
+
+In the structure above, data from a given session folder is not
+necessarily collected at the same timepoint. This is even  certain subjects will be missing
+a subset of these folders will be curated in the BIDS structure, unless miDue to the multimodal nature of the HBCD study and
+also the challenges of collecting quality data on infants,
+all the data collected in a single session is 
 
 
 
