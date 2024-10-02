@@ -1,7 +1,7 @@
 import requests
 import os, json
 
-def fetch_json_data(tool_config_id, tool_name):
+def fetch_json_data(tool_config_id):
     url = 'https://portal.cbrain.mcgill.ca/tool_configs/{}/boutiques_descriptor.json'.format(tool_config_id)
     response = requests.get(url)
     if response.status_code == 200:
@@ -37,7 +37,7 @@ def main():
     with open('../../tool_config_ids.json') as f:
         tool_config_ids = json.load(f)
     for temp_tool in tools_for_documentation:
-        json_data, url = fetch_json_data(tool_config_ids[temp_tool], temp_tool)
+        json_data, url = fetch_json_data(tool_config_ids[temp_tool])
         generate_rst(json_data, tool_config_ids[temp_tool], temp_tool, url)
 
 if __name__ == "__main__":
