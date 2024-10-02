@@ -16,7 +16,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
         initial_text = f"{tool_name} (CBRAIN Tool Config ID: {tool_config_id})\n"
         f.write(initial_text)
         f.write(f"{'-'*len(initial_text)}\n\n")
-        f.write('Link to current boutiques descriptor `here <{}>`_ \n\n'.format(url))
+        f.write('Current boutiques `descriptor <{}>`_ \n\n'.format(url))
         #f.write(".. list-table::\n")
         #f.write("   :header-rows: 1\n\n")
         f.write(f"* **Container**: {json_data["container-image"]["index"] + json_data["container-image"]["image"]}\n")
