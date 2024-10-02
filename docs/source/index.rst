@@ -37,6 +37,4 @@ HBCD processing involves the following details:
    :caption: Contents:
 
    bids_details
-   inputs_formatting
-   outputs
    tool_details
