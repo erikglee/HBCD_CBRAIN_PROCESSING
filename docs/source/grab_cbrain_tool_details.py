@@ -9,12 +9,20 @@ def fetch_json_data(tool_config_id, tool_name):
     else:
         raise Exception(f"Failed to fetch JSON data. Status code: {response.status_code}")
 
-def generate_rst(json_data):
+def generate_rst(json_data, tool_config_id, tool_name):
     # Example processing: create a new rst file using json data
+    keys_to_query = ['name', 'description', 'author', 'version', 'command-line', 'inputs', 'outputs']
     with open('tool_details.rst', 'a') as f:
-        f.write(f".. This is an auto-generated section based on JSON\n")
-        for key, value in json_data.items():
-            f.write(f"{key}: {value}\n")
+        initial_text = f"{tool_name} (CBRAIN Tool Config ID: {tool_config_id})\n"
+        f.write(initial_text)
+        f.write(f"{'='*len(initial_text)}\n\n")
+        f.write(".. list-table::\n")
+        f.write("   :header-rows: 1\n\n")
+        for temp_key in keys_to_query:
+            f.write(f"   * - {temp_key}\n")
+            f.write(f"     - {json_data[temp_key]}\n")
+
+    return
 
 def main():
 
@@ -29,7 +37,7 @@ def main():
         tool_config_ids = json.load(f)
     for temp_tool in tools_for_documentation:
         json_data = fetch_json_data(tool_config_ids[temp_tool], temp_tool)
-        generate_rst(json_data)
+        generate_rst(json_data, tool_config_ids[temp_tool], temp_tool)
 
 if __name__ == "__main__":
     main()
