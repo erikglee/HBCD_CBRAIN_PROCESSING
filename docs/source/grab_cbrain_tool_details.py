@@ -11,7 +11,7 @@ def fetch_json_data(tool_config_id, tool_name):
 
 def generate_rst(json_data, tool_config_id, tool_name):
     # Example processing: create a new rst file using json data
-    keys_to_query = ['name', 'description', 'author', 'version', 'command-line', 'inputs', 'outputs']
+    keys_to_query = ['name', 'description']
     with open('tool_details.rst', 'a') as f:
         initial_text = f"{tool_name} (CBRAIN Tool Config ID: {tool_config_id})\n"
         f.write(initial_text)
