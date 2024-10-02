@@ -23,7 +23,6 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
             f.write(f"   * - {temp_key}\n")
             f.write(f"     - {json_data[temp_key]}\n")
 
-    return
 
 def main():
 
@@ -37,6 +36,7 @@ def main():
     with open('../../tool_config_ids.json') as f:
         tool_config_ids = json.load(f)
     for temp_tool in tools_for_documentation:
+        print('Adding {} to documentation'.format(temp_tool))
         json_data, url = fetch_json_data(tool_config_ids[temp_tool])
         generate_rst(json_data, tool_config_ids[temp_tool], temp_tool, url)
 
