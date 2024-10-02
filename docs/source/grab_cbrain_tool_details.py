@@ -19,6 +19,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
         f.write('Link to current boutiques descriptor `here <{}>`_ \n\n'.format(url))
         #f.write(".. list-table::\n")
         #f.write("   :header-rows: 1\n\n")
+        f.write(f"* **Container**: {json_data["container-image"]["index"] + json_data["container-image"]["image"]}\n")
         for temp_key in keys_to_query:
             f.write(f"* **{temp_key}**: {json_data[temp_key]}\n")
         f.write("\n\n")
