@@ -11,20 +11,21 @@ def fetch_json_data(tool_config_id, tool_name):
 
 def generate_rst(json_data):
     # Example processing: create a new rst file using json data
-    with open('docs/source/tool_details.rst', 'a') as f:
+    with open('tool_details.rst', 'a') as f:
         f.write(f".. This is an auto-generated section based on JSON\n")
         for key, value in json_data.items():
             f.write(f"{key}: {value}\n")
 
 def main():
 
-    with open('docs/source/tool_details.rst', 'w') as f:
+    print(os.listdir())
+    with open('tool_details.rst', 'w') as f:
         f.write('Tool Details\n')
         f.write('============\n\n')
     with open('tools_to_feature_in_documentation.txt', 'r') as f:
         tools_for_documentation = [line.strip() for line in f]
     print(tools_for_documentation)
-    with open('tool_config_ids.json') as f:
+    with open('../../tool_config_ids.json') as f:
         tool_config_ids = json.load(f)
     for temp_tool in tools_for_documentation:
         json_data = fetch_json_data(tool_config_ids[temp_tool], temp_tool)
