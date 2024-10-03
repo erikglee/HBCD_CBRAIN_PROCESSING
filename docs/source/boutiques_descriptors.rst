@@ -13,13 +13,13 @@ of the expected inputs and outputs for a pipeline, and the arguments
 that can be used to configure processing. 
 
 Boutiques descriptors are how CBRAIN can create a consistent interface
-interacting with a wide variety of pipelines. On the CBRAIN web-interface,
+for interacting with a wide variety of pipelines. On the CBRAIN web portal,
 the options for processing are automatically configured in a convenient way
 for users via utilities like drop-down menus, text fields, and check-boxes.
 Because of the complexity and scale of HBCD processing, we instead interact
-with CBRAIN (and the Boutiques descriptors within CBRAIN) via CBRAIN's API
-interface. In either case, the "descriptor" for a given tool will determine
-how arguments from a user are conveyed to a container for processing purposes.
+with CBRAIN (and the Boutiques descriptors within CBRAIN) via CBRAIN's API.
+In either case, the "descriptor" for a given tool will determine how
+arguments from a user are conveyed to a container for processing purposes.
 
 In this section of the documentation, we describe some of the relevant details
 of Boutiques descriptors that are useful for understanding HBCD processing.
