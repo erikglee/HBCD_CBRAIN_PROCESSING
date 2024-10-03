@@ -40,7 +40,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
         for temp_key in external_requirements.keys():
             f.write(f"   * - {temp_key}\n")
             f.write(f"     - {external_requirements[temp_key]}\n")
-            f.write(f"     - {json_data[temp_key]}\n")
+            f.write(f"     - {json_data['inputs'][temp_key]}\n")
 
     
     
