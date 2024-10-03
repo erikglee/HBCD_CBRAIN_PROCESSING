@@ -46,7 +46,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
                 raise Exception(f"Could not find input with ID {temp_key} in descriptor")
             f.write(f"   * - {temp_key}\n")
             f.write(f"     - {external_requirements[temp_key]}\n")
-            f.write(f"     - {relevant_input[temp_key]}\n")
+            f.write(f"     - {relevant_input['description']}\n")
 
     
     
