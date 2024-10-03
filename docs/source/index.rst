@@ -41,3 +41,4 @@ HBCD processing involves the following details:
 
    bids_details
    tool_details
+   boutiques_descriptors
