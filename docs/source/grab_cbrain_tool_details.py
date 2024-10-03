@@ -95,7 +95,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
             except:
                 f.write(f"     - NA\n")
             f.write(f"     - {temp_output['description']}\n")
-        f.write("\n\n:nbsp::nbsp::nbsp:\n\n")
+        f.write("\n \n \n \n")
 
 
     
