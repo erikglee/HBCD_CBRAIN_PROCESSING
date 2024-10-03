@@ -27,20 +27,20 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
             f.write(f"* **{temp_key}**: {json_data[temp_key]}\n")
         f.write("\n\n")
 
-    with open('../../external_requirements/{}.json'.format(tool_name), 'r') as f:
-        external_requirements = json.load(f)
-    with open('../../processing_configurations/{}.json'.format(tool_name), 'r') as f:
-        processing_configurations = json.load(f)
+        with open('../../external_requirements/{}.json'.format(tool_name), 'r') as f2:
+            external_requirements = json.load(f2)
+        with open('../../processing_configurations/{}.json'.format(tool_name), 'r') as f3:
+            processing_configurations = json.load(f3)
 
-    f.write(".. list-table::\n")
-    f.write("   :header-rows: 1\n\n")
-    f.write("   * - Argument ID\n")
-    f.write("     - Value\n")
-    f.write("     - Description\n")
-    for temp_key in external_requirements.keys():
-        f.write(f"   * - {temp_key}\n")
-        f.write(f"     - {external_requirements[temp_key]}\n")
-        f.write(f"     - {json_data[temp_key]}\n")
+        f.write(".. list-table::\n")
+        f.write("   :header-rows: 1\n\n")
+        f.write("   * - Argument ID\n")
+        f.write("     - Value\n")
+        f.write("     - Description\n")
+        for temp_key in external_requirements.keys():
+            f.write(f"   * - {temp_key}\n")
+            f.write(f"     - {external_requirements[temp_key]}\n")
+            f.write(f"     - {json_data[temp_key]}\n")
 
     
     
