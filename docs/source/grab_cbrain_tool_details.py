@@ -13,7 +13,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
     # Example processing: create a new rst file using json data
     keys_to_query = ['name', 'description']
     with open('tool_details.rst', 'a') as f:
-        initial_text = f"{tool_name} (CBRAIN Tool Config ID: {tool_config_id})\n"
+        initial_text = f"{tool_name} (`CBRAIN Tool Config ID: {tool_config_id} <{url}>`_)\n"
         f.write(initial_text)
         f.write(f"{'-'*len(initial_text)}\n\n")
         f.write('Current boutiques `descriptor <{}>`_ \n'.format(url))
@@ -32,6 +32,8 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
         with open('../../processing_configurations/{}.json'.format(tool_name), 'r') as f3:
             processing_configurations = json.load(f3)
 
+        f.write('File Based Arguments')
+        f.write('********************\n')
         f.write(".. list-table::\n")
         f.write("   :header-rows: 1\n\n")
         f.write("   * - Argument ID\n")
@@ -47,6 +49,26 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
             f.write(f"   * - {temp_key}\n")
             f.write(f"     - {external_requirements[temp_key]}\n")
             f.write(f"     - {relevant_input['description']}\n")
+        f.write("\n\n")
+
+        f.write('Non-File Arguments\n')
+        f.write('******************\n')
+        f.write(".. list-table::\n")
+        f.write("   :header-rows: 1\n\n")
+        f.write("   * - Argument ID\n")
+        f.write("     - Value\n")
+        f.write("     - Description\n")
+        for temp_key in processing_configurations.keys():
+            relevant_input = None
+            for temp_input in json_data['inputs']:
+                if temp_input['id'] == temp_key:
+                    relevant_input = temp_input
+            if relevant_input is None:
+                raise Exception(f"Could not find input with ID {temp_key} in descriptor")
+            f.write(f"   * - {temp_key}\n")
+            f.write(f"     - {processing_configurations[temp_key]}\n")
+            f.write(f"     - {relevant_input['description']}\n")
+        f.write("\n\n")
 
     
     
