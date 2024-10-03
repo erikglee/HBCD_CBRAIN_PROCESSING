@@ -46,9 +46,10 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
                     relevant_input = temp_input
             if relevant_input is None:
                 raise Exception(f"Could not find input with ID {temp_key} in descriptor")
+            description = relevant_input['description'].replace('\n', ' ').replace('\r', '')
             f.write(f"   * - {temp_key}\n")
             f.write(f"     - {external_requirements[temp_key]}\n")
-            f.write(f"     - {relevant_input['description']}\n")
+            f.write(f"     - {description}\n")
         f.write("\n\n")
 
         f.write("Other Processing Settings\n")
