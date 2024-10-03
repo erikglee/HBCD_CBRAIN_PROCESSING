@@ -38,9 +38,15 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
         f.write("     - Value\n")
         f.write("     - Description\n")
         for temp_key in external_requirements.keys():
+            relevant_input = None
+            for temp_input in json_data['inputs']:
+                if temp_input['id'] == temp_key:
+                    relevant_input = temp_input
+            if relevant_input is None:
+                raise Exception(f"Could not find input with ID {temp_key} in descriptor")
             f.write(f"   * - {temp_key}\n")
             f.write(f"     - {external_requirements[temp_key]}\n")
-            f.write(f"     - {json_data['inputs'][temp_key]}\n")
+            f.write(f"     - {relevant_input[temp_key]}\n")
 
     
     
