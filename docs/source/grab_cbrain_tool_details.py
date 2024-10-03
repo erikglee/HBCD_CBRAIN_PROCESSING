@@ -71,6 +71,32 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
             f.write(f"     - {description}\n")
         f.write("\n\n\n\n")
 
+        f.write("Pipeline Outputs\n")
+        f.write("*************************\n\n")
+        f.write(".. list-table::\n")
+        f.write("   :header-rows: 1\n\n")
+        f.write("   * - ID\n")
+        f.write("     - Path Relative to Working Directory\n")
+        f.write("     - Path in Output DataProvider\n")
+        f.write("     - Description\n")
+        for temp_output in json_data['output-files']:
+            relevant_input = None
+            for temp_input in json_data['inputs']:
+                if temp_input['id'] == temp_key:
+                    relevant_input = temp_input
+                    description = relevant_input['description'].replace('\n', ' ').replace('\r', '')
+            if relevant_input is None:
+                raise Exception(f"Could not find input with ID {temp_key} in descriptor")
+            f.write(f"   * - {temp_output['name']}\n")
+            f.write(f"     - {temp_output['path-template']}\n")
+            try:
+                output_path = json_data['custom']["cbrain:integrator_modules"]["BoutiquesForcedOutputBrowsePath"][temp_output['name']]
+                f.write(f"     - {output_path}\n")
+            except:
+                f.write(f"     - NA\n")
+            f.write(f"     - {temp_output['description']}\n")
+        f.write("\n\n\n\n")
+
     
     
 
