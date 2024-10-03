@@ -28,10 +28,11 @@ and `webpage <https://boutiques.github.io/>`_.
 
 First, at the top-level of a Boutiques descriptor, there are a few key fields
 that describe the tool itself. These include: ::
-    - name (str): The name of the tool.
-    - description (str): A description of the tool.
-    - tool-version (str): The version of the tool for display in CBRAIN
-    - container-image (str): A field with sub-fields that describe where the container lives
+    
+    * **name**: The name of the tool.
+    * **description**: A description of the tool.
+    * **tool-version**: The version of the tool for display in CBRAIN
+    * **container-image**: A field with sub-fields that describe where the container lives
 
 Next are details that are more closely related to how the tool operates. All arguments (including
 both groups of input and output files) will be specified in the "inputs" section. Arguments can
