@@ -6,7 +6,7 @@
 Understanding Boutiques Descriptors
 ===================================
 
-`Boutiques descriptors <https://arxiv.org/abs/1711.09713>_` are
+`Boutiques descriptors <https://arxiv.org/abs/1711.09713>`_ are
 flexible JSON-based instructions that describe how a containerized
 application can be interacted with. For example, this includes descriptions
 of the expected inputs and outputs for a pipeline, and the arguments
@@ -23,8 +23,8 @@ how arguments from a user are conveyed to a container for processing purposes.
 
 In this section of the documentation, we describe some of the relevant details
 of Boutiques descriptors that are useful for understanding HBCD processing.
-Other details can also be found in the Boutiques `publication <https://arxiv.org/abs/1711.09713>_` 
-and `webpage <https://boutiques.github.io/>_`.
+Other details can also be found in the Boutiques `publication <https://arxiv.org/abs/1711.09713>`_ 
+and `webpage <https://boutiques.github.io/>`_.
 
 First, at the top-level of a Boutiques descriptor, there are a few key fields
 that describe the tool itself. These include: ::
