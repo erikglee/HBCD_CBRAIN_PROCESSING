@@ -87,10 +87,10 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
                     description = relevant_input['description'].replace('\n', ' ').replace('\r', '')
             if relevant_input is None:
                 raise Exception(f"Could not find input with ID {temp_key} in descriptor")
-            f.write(f"   * - {temp_output['name']}\n")
+            f.write(f"   * - {temp_output['id']}\n")
             f.write(f"     - {temp_output['path-template']}\n")
             try:
-                output_path = json_data['custom']["cbrain:integrator_modules"]["BoutiquesForcedOutputBrowsePath"][temp_output['name']]
+                output_path = json_data["custom"]["cbrain:integrator_modules"]["BoutiquesForcedOutputBrowsePath"][temp_output['id']]
                 f.write(f"     - {output_path}\n")
             except:
                 f.write(f"     - NA\n")
