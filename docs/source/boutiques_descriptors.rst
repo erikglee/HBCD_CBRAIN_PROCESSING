@@ -27,7 +27,7 @@ Other details can also be found in the Boutiques `publication <https://arxiv.org
 and `webpage <https://boutiques.github.io/>`_.
 
 First, at the top-level of a Boutiques descriptor, there are a few key fields
-that describe the tool itself. These include: ::
+that describe the tool itself. These include:
     
     * **name**: The name of the tool.
     * **description**: A description of the tool.
