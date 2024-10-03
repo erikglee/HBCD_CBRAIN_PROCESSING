@@ -16,8 +16,8 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
         initial_text = f"{tool_name} (`CBRAIN Tool Config ID: {tool_config_id} <{url}>`_)\n"
         f.write(initial_text)
         f.write(f"{'-'*len(initial_text)}\n\n")
-        f.write('Current boutiques `descriptor <{}>`_ \n'.format(url))
-        f.write('************************************\n\n')
+        #f.write('Current boutiques `descriptor <{}>`_ \n'.format(url))
+        #f.write('************************************\n\n')
         #f.write(".. list-table::\n")
         #f.write("   :header-rows: 1\n\n")
         f.write(f"* **Container**: {json_data["container-image"]["index"] + json_data["container-image"]["image"]}\n")
@@ -32,8 +32,8 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
         with open('../../processing_configurations/{}.json'.format(tool_name), 'r') as f3:
             processing_configurations = json.load(f3)
 
-        f.write('File Based Arguments')
-        f.write('********************\n')
+        f.write("External Requirements\n")
+        f.write("*********************\n\n")
         f.write(".. list-table::\n")
         f.write("   :header-rows: 1\n\n")
         f.write("   * - Argument ID\n")
@@ -51,8 +51,8 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
             f.write(f"     - {relevant_input['description']}\n")
         f.write("\n\n")
 
-        f.write('Non-File Arguments\n')
-        f.write('******************\n')
+        f.write("Other Processing Settings\n")
+        f.write("*************************\n\n")
         f.write(".. list-table::\n")
         f.write("   :header-rows: 1\n\n")
         f.write("   * - Argument ID\n")
