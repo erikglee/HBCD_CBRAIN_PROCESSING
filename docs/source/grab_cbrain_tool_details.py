@@ -164,7 +164,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
                                 f.write(f"   * - {key}\n")
                                 f.write(f"     - {temp_qc[key][0]}\n")
                                 f.write(f"     - {temp_qc[key][1]}\n")
-                            f.write("\n\n")
+                            f.write("\n\n\n")
 
 
     
