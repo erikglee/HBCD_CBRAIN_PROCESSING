@@ -113,7 +113,8 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
             f.write("satisfy at least one of the following requirements for processing.\n")
             f.write("If at least one requirement is satisfied processing can occur.\n")
             f.write("If processing can occur, any files that match any requirements \n")
-            f.write("will be considered for processing.\n\n")
+            f.write("will be considered for processing. If only one table is seen below,\n")
+            f.write("this means the pipeline only has one set of possible requirements.\n\n")
             for filename in requirements_files:
                 with open(filename, 'r') as f2:
                     temp_processing_reqs = json.load(f2)
