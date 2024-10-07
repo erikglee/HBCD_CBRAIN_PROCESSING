@@ -8,6 +8,15 @@ def fetch_json_data(tool_config_id):
         return response.json(), url
     else:
         raise Exception(f"Failed to fetch JSON data. Status code: {response.status_code}")
+    
+def escape_rst_special_chars(text):
+    # Define the characters that need to be escaped
+    special_chars = r"[*_`|:.]"  # Add any other characters as necessary
+    
+    # Escape each special character by prefixing it with a backslash
+    escaped_text = re.sub(f"([{special_chars}])", r"\\\1", text)
+    
+    return escaped_text
 
 def generate_rst(json_data, tool_config_id, tool_name, url):
     # Example processing: create a new rst file using json data
@@ -24,7 +33,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
         if 'url' in json_data.keys():
             f.write(f"* **Documentation**: {json_data['url']}\n")
         for temp_key in keys_to_query:
-            f.write(f"* **{temp_key}**: {json_data[temp_key]}\n")
+            f.write(f"* **{temp_key}**: {escape_rst_special_chars(json_data[temp_key])}\n")
         f.write("\n\n")
 
         with open('../../external_requirements/{}.json'.format(tool_name), 'r') as f2:
@@ -47,9 +56,9 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
             if relevant_input is None:
                 raise Exception(f"Could not find input with ID {temp_key} in descriptor")
             description = relevant_input['description'].replace('\n', ' ').replace('\r', '')
-            f.write(f"   * - {temp_key}\n")
-            f.write(f"     - {external_requirements[temp_key]}\n")
-            f.write(f"     - {description}\n")
+            f.write(f"   * - {escape_rst_special_chars(temp_key)}\n")
+            f.write(f"     - {escape_rst_special_chars(external_requirements[temp_key])}\n")
+            f.write(f"     - {escape_rst_special_chars(description)}\n")
         f.write("\n\n")
 
         f.write("Other Processing Settings\n")
