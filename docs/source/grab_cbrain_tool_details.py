@@ -76,9 +76,9 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
                     description = relevant_input['description'].replace('\n', ' ').replace('\r', '')
             if relevant_input is None:
                 raise Exception(f"Could not find input with ID {temp_key} in descriptor")
-            f.write(f"   * - {temp_key}\n")
-            f.write(f"     - {processing_configurations[temp_key]}\n")
-            f.write(f"     - {description}\n")
+            f.write(f"   * - {escape_rst_special_chars(temp_key)}\n")
+            f.write(f"     - {escape_rst_special_chars(processing_configurations[temp_key])}\n")
+            f.write(f"     - {escape_rst_special_chars(description)}\n")
         f.write("\n\n\n\n")
 
         f.write("Pipeline Outputs\n")
@@ -97,14 +97,14 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
                     description = relevant_input['description'].replace('\n', ' ').replace('\r', '')
             if relevant_input is None:
                 raise Exception(f"Could not find input with ID {temp_key} in descriptor")
-            f.write(f"   * - {temp_output['id']}\n")
-            f.write(f"     - {temp_output['path-template']}\n")
+            f.write(f"   * - {escape_rst_special_chars(temp_output['id'])}\n")
+            f.write(f"     - {escape_rst_special_chars(temp_output['path-template'])}\n")
             try:
                 output_path = json_data["custom"]["cbrain:integrator_modules"]["BoutiquesForcedOutputBrowsePath"][temp_output['id']]
-                f.write(f"     - {output_path}\n")
+                f.write(f"     - {escape_rst_special_chars(output_path)}\n")
             except:
                 f.write(f"     - NA\n")
-            f.write(f"     - {temp_output['description']}\n")
+            f.write(f"     - {escape_rst_special_chars(temp_output['description'])}\n")
         
         comp_proc_recs_dir = '../../comprehensive_processing_prerequisites'
         requirements_files = []
@@ -141,11 +141,11 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
                         is_qc_used = True
                     for i, temp_inner_key in enumerate(file_naming_dict.keys()):
                         if i == 0:
-                            f.write(f"   * - {temp_key}\n")
+                            f.write(f"   * - {escape_rst_special_chars(temp_key)}\n")
                         else:
                             f.write(f"   * -   \n")
-                        f.write(f"     - {temp_inner_key}\n")
-                        f.write(f"     - {file_naming_dict[temp_inner_key]}\n")
+                        f.write(f"     - {escape_rst_special_chars(temp_inner_key)}\n")
+                        f.write(f"     - {escape_rst_special_chars(file_naming_dict[temp_inner_key])}\n")
 
 
 
@@ -175,9 +175,9 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
                             f.write("     - Value\n")
                             for temp_qc in inner_qc_list:
                                 key = next(iter(temp_qc))
-                                f.write(f"   * - {key}\n")
-                                f.write(f"     - {temp_qc[key][1]}\n")
-                                f.write(f"     - {temp_qc[key][0]}\n")
+                                f.write(f"   * - {escape_rst_special_chars(key)}\n")
+                                f.write(f"     - {escape_rst_special_chars(temp_qc[key][1])}\n")
+                                f.write(f"     - {escape_rst_special_chars(temp_qc[key][0])}\n")
                             f.write("\n\n\n")
 
 
