@@ -1,5 +1,5 @@
 import requests
-import os, json
+import os, json, re
 
 def fetch_json_data(tool_config_id):
     url = 'https://portal.cbrain.mcgill.ca/tool_configs/{}/boutiques_descriptor.json'.format(tool_config_id)
@@ -96,7 +96,15 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
             except:
                 f.write(f"     - NA\n")
             f.write(f"     - {temp_output['description']}\n")
-        f.write("\n \n \n \n")
+        
+        comp_proc_recs_dir = '../../comprehensive_processing_prerequisites'
+        requirements_files = []
+        for filename in os.listdir(comp_proc_recs_dir):
+            # Use regular expression to match pipeline name with or without underscore and number
+            match = re.match(rf"^{tool_name}(?:_[0-9]+)?\.json$", filename)
+            if match:
+                requirements_files.append(os.path.join(comp_proc_recs_dir, filename))
+        requirements_files.sort()
 
 
     
