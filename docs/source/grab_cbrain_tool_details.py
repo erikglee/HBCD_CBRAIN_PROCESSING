@@ -10,18 +10,14 @@ def fetch_json_data(tool_config_id):
         raise Exception(f"Failed to fetch JSON data. Status code: {response.status_code}")
 
 
-
-def escape_rst_special_chars(text):
-    # Define the special RST characters that need escaping
-    rst_special_chars = ['*', '_', '`', '|', ':', '\\', '"', "'", '[', ']', '(', ')', '#', '+', '-', '=', '>', '<', '.']
-    text = str(text)
+def escape_rst_special_chars(input_string):
+    # Define a dictionary of special RST characters to escape
+    special_chars = r"[*`_|\\:]"
     
-    # Escape each special character by adding a single backslash before it
-    for char in rst_special_chars:
-        # Use regex to ensure we only add a single backslash before each special character
-        text = text.replace(char, f'\\{char}')
+    # Escape each special character by prefixing it with a backslash
+    escaped_string = re.sub(f"({special_chars})", r"\\\1", input_string)
     
-    return text
+    return escaped_string
 
 def generate_rst(json_data, tool_config_id, tool_name, url):
     # Example processing: create a new rst file using json data
