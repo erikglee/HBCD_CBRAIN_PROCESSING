@@ -161,13 +161,13 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
                             f.write(".. list-table::\n")
                             f.write("   :header-rows: 1\n\n")
                             f.write("   * - scans.tsv Field\n")
-                            f.write("     - Value\n")
                             f.write("     - Operator\n")
+                            f.write("     - Value\n")
                             for temp_qc in inner_qc_list:
                                 key = next(iter(temp_qc))
                                 f.write(f"   * - {key}\n")
-                                f.write(f"     - {temp_qc[key][0]}\n")
                                 f.write(f"     - {temp_qc[key][1]}\n")
+                                f.write(f"     - {temp_qc[key][0]}\n")
                             f.write("\n\n\n")
 
 
