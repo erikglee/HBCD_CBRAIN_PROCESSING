@@ -36,7 +36,7 @@ HBCD processing involves the following details:
 
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Contents:
 
    index

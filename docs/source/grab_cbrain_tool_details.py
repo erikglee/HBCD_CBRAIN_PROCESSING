@@ -12,7 +12,7 @@ def fetch_json_data(tool_config_id):
 def generate_rst(json_data, tool_config_id, tool_name, url):
     # Example processing: create a new rst file using json data
     keys_to_query = ['name', 'description']
-    with open('tool_details.rst', 'a') as f:
+    with open(f'tools/{tool_name}.rst', 'w') as f:
         initial_text = f"{tool_name} (`CBRAIN Tool Config ID: {tool_config_id} <{url}>`_)\n"
         f.write(initial_text)
         f.write(f"{'-'*len(initial_text)}\n\n")
@@ -149,9 +149,9 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
                         f.write(f"{temp_key}     \n")
                         f.write(f"{'~'*(len(temp_key) + 5)}\n\n")
                         if "num_to_keep" in temp_processing_reqs[temp_key].keys():
-                            f.write("Processing will look for best {} file(s) to keep using the following criteria.\n\n".format(temp_processing_reqs[temp_key]["num_to_keep"]))
+                            f.write("Processing will look for best {} file(s) to keep using the following criteria.\n".format(temp_processing_reqs[temp_key]["num_to_keep"]))
                         else:
-                            f.write("Processing will include all files passing the following criteria.\n\n")
+                            f.write("Processing will include all files passing the following criteria.\n")
                         f.write("In some cases certain pipelines will have a backup set of requirements.\n")
                         f.write("If there are multiple tables below, the second table (and and others) represent\n")
                         f.write("requirements that will be used if one or more of the QC criteria is not defined\n")
@@ -181,13 +181,22 @@ def main():
     with open('tool_details.rst', 'w') as f:
         f.write('Tool Details\n')
         f.write('============\n\n')
+        f.write("The following pages provide information about the tools used\n")
+        f.write("for HBCD processing. Further details including which arguments\n")
+        f.write("are used for processing, and which files are required for processing\n")
+        f.write("are also found in these pages.\n\n\n")
+
     with open('tools_to_feature_in_documentation.txt', 'r') as f:
         tools_for_documentation = [line.strip() for line in f]
     print(tools_for_documentation)
     with open('../../tool_config_ids.json') as f:
         tool_config_ids = json.load(f)
+
+    os.makedir('tools')
     for temp_tool in tools_for_documentation:
         print('Adding {} to documentation'.format(temp_tool))
+        with open('tool_details.rst', 'a') as f:
+            f.write(f"* :doc:`tools/{temp_tool}`\n")
         json_data, url = fetch_json_data(tool_config_ids[temp_tool])
         generate_rst(json_data, tool_config_ids[temp_tool], temp_tool, url)
 
