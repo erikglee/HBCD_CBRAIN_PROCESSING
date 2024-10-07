@@ -105,6 +105,17 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
             if match:
                 requirements_files.append(os.path.join(comp_proc_recs_dir, filename))
         requirements_files.sort()
+        if len(requirements_files) > 0:
+            f.write("Comprehensive Processing Recommendations\n")
+            f.write("***************************************\n\n")
+            for filename in requirements_files:
+                with open(filename, 'r') as f2:
+                    comprehensive_processing_recommendations = json.load(f2)
+                f.write(f"**{os.path.basename(filename)}**\n")
+                f.write(f"{'-'*len(os.path.basename(filename))}\n\n")
+                for temp_key in comprehensive_processing_recommendations.keys():
+                    f.write(f"* **{temp_key}**: {comprehensive_processing_recommendations[temp_key]}\n")
+                f.write("\n\n")
 
 
     
