@@ -195,8 +195,8 @@ def main():
     os.makedirs('tools')
     for temp_tool in tools_for_documentation:
         print('Adding {} to documentation'.format(temp_tool))
-        with open('tool_details.rst', 'a') as f:
-            f.write(f"* :doc:`tools/{temp_tool}`\n")
+        #with open('tool_details.rst', 'a') as f:
+        #    f.write(f"* :doc:`tools/{temp_tool}`\n")
         json_data, url = fetch_json_data(tool_config_ids[temp_tool])
         generate_rst(json_data, tool_config_ids[temp_tool], temp_tool, url)
 
