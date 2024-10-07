@@ -1,2 +1,3 @@
+sphinx-build-compatibility
 sphinx_rtd_theme
 sphinx-argparse
