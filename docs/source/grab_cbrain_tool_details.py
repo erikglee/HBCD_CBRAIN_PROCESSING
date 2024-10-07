@@ -192,7 +192,7 @@ def main():
     with open('../../tool_config_ids.json') as f:
         tool_config_ids = json.load(f)
 
-    os.makedir('tools')
+    os.makedirs('tools')
     for temp_tool in tools_for_documentation:
         print('Adding {} to documentation'.format(temp_tool))
         with open('tool_details.rst', 'a') as f:
