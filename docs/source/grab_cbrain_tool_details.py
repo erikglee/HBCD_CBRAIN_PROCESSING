@@ -146,10 +146,10 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
                 f.write("")
                 for temp_key in temp_processing_reqs.keys():
                     if 'qc_criteria' in temp_processing_reqs[temp_key].keys():
-                        f.write(f"**{temp_key}**\n")
-                        f.write(f"{'~'*len(temp_key)}\n\n")
+                        f.write(f"**{temp_key}     **\n")
+                        f.write(f"{'~'*(len(temp_key) + 5)}\n\n")
                         if "num_to_keep" in temp_processing_reqs[temp_key].keys():
-                            f.write("Processing will look for best {} file(s) to keep using the following criteria.".format(temp_processing_reqs[temp_key]["num_to_keep"]))
+                            f.write("Processing will look for best {} file(s) to keep using the following criteria.\n".format(temp_processing_reqs[temp_key]["num_to_keep"]))
                         else:
                             f.write("Processing will include all files passing the following criteria.")
                         outer_qc_list = temp_processing_reqs[temp_key]['qc_criteria']
