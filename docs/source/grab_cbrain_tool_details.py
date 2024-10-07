@@ -115,12 +115,27 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
             f.write("will be inclued during processing.\n\n")
             for filename in requirements_files:
                 with open(filename, 'r') as f2:
-                    comprehensive_processing_recommendations = json.load(f2)
-                requirement_name = os.path.basename(filename).replace('.json', '')
+                    temp_processing_reqs = json.load(f2)
+                requirement_name = 'Requirement Group: ' + os.path.basename(filename).replace('.json', '')
                 f.write(f"{requirement_name}\n")
                 f.write(f"{'~'*len(os.path.basename(filename))}\n\n")
-                for temp_key in comprehensive_processing_recommendations.keys():
-                    f.write(f"* **{temp_key}**: {comprehensive_processing_recommendations[temp_key]}\n")
+                f.write(".. list-table::\n")
+                f.write("   :header-rows: 1\n\n")
+                f.write("   * - Group Name\n")
+                f.write("     - Term\n")
+                f.write("     - Included (True)/Excluded (False)\n")
+                for temp_key in temp_processing_reqs.keys():
+                    file_naming_dict = temp_processing_reqs['file_naming']
+                    for i, temp_inner_key in enumerate(file_naming_dict.keys()):
+                        if i == 0:
+                            f.write(f"     - {temp_key}\n")
+                        else:
+                            f.write(f"     -    \n")
+                        f.write(f"     - {temp_inner_key}\n")
+                        f.write(f"     - {file_naming_dict[temp_inner_key]}\n")
+
+
+
                 f.write("\n\n")
 
 
