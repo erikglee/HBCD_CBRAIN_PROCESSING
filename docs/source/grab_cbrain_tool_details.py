@@ -108,11 +108,17 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
         if len(requirements_files) > 0:
             f.write("Comprehensive Processing Recommendations\n")
             f.write("***************************************\n\n")
+            f.write("The data for one imaging session (i.e. sub-1, ses-V02) must\n")
+            f.write("satisfy at least one of the following requirements for processing.\n")
+            f.write("If at least one requirement is satisfied processing can occur.\n")
+            f.write("If processing can occur, any files that match any requirements \n")
+            f.write("will be inclued during processing.\n\n")
             for filename in requirements_files:
                 with open(filename, 'r') as f2:
                     comprehensive_processing_recommendations = json.load(f2)
-                f.write(f"**{os.path.basename(filename)}**\n")
-                f.write(f"{'-'*len(os.path.basename(filename))}\n\n")
+                requirement_name = os.path.basename(filename).replace('.json', '')
+                f.write(f"{requirement_name}\n")
+                f.write(f"{'~'*len(os.path.basename(filename))}\n\n")
                 for temp_key in comprehensive_processing_recommendations.keys():
                     f.write(f"* **{temp_key}**: {comprehensive_processing_recommendations[temp_key]}\n")
                 f.write("\n\n")
