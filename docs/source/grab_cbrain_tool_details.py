@@ -128,9 +128,9 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
                     file_naming_dict = temp_processing_reqs[temp_key]['file_naming']
                     for i, temp_inner_key in enumerate(file_naming_dict.keys()):
                         if i == 0:
-                            f.write(f"    * - {temp_key}\n")
+                            f.write(f"   * - {temp_key}\n")
                         else:
-                            f.write(f"    * -   \n")
+                            f.write(f"   * -   \n")
                         f.write(f"     - {temp_inner_key}\n")
                         f.write(f"     - {file_naming_dict[temp_inner_key]}\n")
 
