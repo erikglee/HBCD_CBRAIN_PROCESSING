@@ -14,7 +14,7 @@ def escape_rst_special_chars(text):
     special_chars = r"[*_`|:.]"  # Add any other characters as necessary
     
     # Escape each special character by prefixing it with a backslash
-    escaped_text = re.sub(f"([{special_chars}])", r"\\\1", text)
+    escaped_text = re.sub(f"([{special_chars}])", r"\\\1", str(text))
     
     return escaped_text
 
