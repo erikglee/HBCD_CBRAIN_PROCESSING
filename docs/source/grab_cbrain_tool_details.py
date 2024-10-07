@@ -125,7 +125,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
                 f.write("     - Term\n")
                 f.write("     - Included (True)/Excluded (False)\n")
                 for temp_key in temp_processing_reqs.keys():
-                    file_naming_dict = temp_processing_reqs['file_naming']
+                    file_naming_dict = temp_processing_reqs[temp_key]['file_naming']
                     for i, temp_inner_key in enumerate(file_naming_dict.keys()):
                         if i == 0:
                             f.write(f"     - {temp_key}\n")
