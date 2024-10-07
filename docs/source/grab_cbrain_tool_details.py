@@ -203,7 +203,7 @@ def main():
     with open('tool_details.rst', 'a') as f:
         f.write("\n\n\n")
         f.write(".. toctree::\n")
-        f.write("   :maxdepth: 1\n\n")
+        f.write("   :maxdepth: 2\n\n")
         for temp_tool in tools_for_documentation:
             f.write(f"   tools/{temp_tool}\n")
 
