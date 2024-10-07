@@ -152,9 +152,12 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
                             f.write("Processing will look for best {} file(s) to keep using the following criteria.\n\n".format(temp_processing_reqs[temp_key]["num_to_keep"]))
                         else:
                             f.write("Processing will include all files passing the following criteria.\n\n")
+                        f.write("In some cases certain pipelines will have a backup set of requirements.\n")
+                        f.write("If there are multiple tables below, the second table (and and others) represent\n")
+                        f.write("requirements that will be used if one or more of the QC criteria is not defined\n")
+                        f.write("in the first table.\n\n")
                         outer_qc_list = temp_processing_reqs[temp_key]['qc_criteria']
                         for j, inner_qc_list in enumerate(outer_qc_list):
-                            f.write(f"QC Set {j}\n\n")
                             f.write(".. list-table::\n")
                             f.write("   :header-rows: 1\n\n")
                             f.write("   * - scans.tsv Field\n")
