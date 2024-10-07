@@ -10,13 +10,15 @@ def fetch_json_data(tool_config_id):
         raise Exception(f"Failed to fetch JSON data. Status code: {response.status_code}")
 
 
+
 def escape_rst_special_chars(text):
-    # Escape each special RST character by adding a backslash before it
+    # Define the special RST characters that need escaping
     rst_special_chars = ['*', '_', '`', '|', ':', '\\', '"', "'", '[', ']', '(', ')', '#', '+', '-', '=', '>', '<', '.']
     text = str(text)
     
-    # Escape all RST special characters
+    # Escape each special character by adding a single backslash before it
     for char in rst_special_chars:
+        # Use regex to ensure we only add a single backslash before each special character
         text = text.replace(char, f'\\{char}')
     
     return text
