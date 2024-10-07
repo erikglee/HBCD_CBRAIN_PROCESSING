@@ -200,11 +200,12 @@ def main():
         json_data, url = fetch_json_data(tool_config_ids[temp_tool])
         generate_rst(json_data, tool_config_ids[temp_tool], temp_tool, url)
 
-    f.write("\n\n\n")
-    f.write(".. toctree::\n")
-    f.write("   :maxdepth: 1\n\n")
-    for temp_tool in tools_for_documentation:
-        f.write(f"   tools/{temp_tool}\n")
+    with open('tool_details.rst', 'a') as f:
+        f.write("\n\n\n")
+        f.write(".. toctree::\n")
+        f.write("   :maxdepth: 1\n\n")
+        for temp_tool in tools_for_documentation:
+            f.write(f"   tools/{temp_tool}\n")
 
 if __name__ == "__main__":
     main()
