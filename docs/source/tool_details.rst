@@ -28,8 +28,8 @@ For example, for a given pipeline there is the following structure: ::
     │   ├── ... (other processing outputs)
 
 Within the files above, users are provided with the following information:
-- The boutiques_descriptor.json file will contain the exact version
-  of the boutiques descriptor that was used for processing.
+
+- The boutiques_descriptor.json file will contain the exact version of the boutiques descriptor that was used for processing.
 - The boutiques_invoke.json will describe the arguments used for processing.
 - The cbrain_params.json file will specify details including which files were used for processing.
   While this document does not contain the QC criteria that was used to include/exclude files from
@@ -39,3 +39,5 @@ Within the files above, users are provided with the following information:
 - The runtime_info.properties file will contain information about the processing script that was run.
 - The stderr.log and stdout.log files will contain the standard error and standard output from the processing job.
 
+Tool Names
+~~~~~~~~~~
