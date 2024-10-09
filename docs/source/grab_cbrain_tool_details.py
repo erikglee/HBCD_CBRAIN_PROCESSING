@@ -192,13 +192,6 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
 def main():
 
     print(os.listdir())
-    with open('tool_details.rst', 'w') as f:
-        f.write('Tool Details\n')
-        f.write('============\n\n')
-        f.write("The following pages provide information about the tools used\n")
-        f.write("for HBCD processing. Further details including which arguments\n")
-        f.write("are used for processing, and which files are required for processing\n")
-        f.write("are also found in these pages.\n\n\n")
 
     with open('tools_to_feature_in_documentation.txt', 'r') as f:
         tools_for_documentation = [line.strip() for line in f]
