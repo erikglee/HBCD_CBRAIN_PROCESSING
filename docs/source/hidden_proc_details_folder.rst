@@ -3,7 +3,6 @@ The .cbrain folder in Processing Outputs
 
 This page describes the .cbrain folder, which is found in many processing outputs
 and contains detailed information about the processing that was performed.
-
 For example, for a given set of pipeline outputs there is the following structure: ::
     
     pipeline_name/
