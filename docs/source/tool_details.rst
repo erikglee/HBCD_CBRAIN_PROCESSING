@@ -11,7 +11,7 @@ interested in understanding how processing is conducted. All pages
 that you see below are auto-populated based on the processing configuration
 files in the `HBCD_CBRAIN_PROCESSING repository <https://github.com/erikglee/HBCD_CBRAIN_PROCESSING>`_,
 and versions of the Boutiques descriptors that we have stored in CBRAIN.
-For HBCD datasets that are processed in CBRAIN, similar information is
+For HBCD datasets that are processed in `CBRAIN <https://cbrain.ca/>`_, similar information is
 also automatically saved out to the subject level derivatives folder. These files
 are directly derived from the processing task, providing a more accurate and robust
 description than the summary provided here. If you are interested in learning
