@@ -34,6 +34,25 @@ HBCD processing involves the following details:
    CBRAIN will maintain a record of the error and the files that were used for processing.
 
 
+How to interact with this documentation
+---------------------------------------
+
+There are a number of pages within this document that are intended to better oriented
+users to how HBCD processing is conducted. Here we give an overview of some of the pages
+that may contain information you are interested in.
+
+- :doc:`BIDS Details <bids_details>`: This page contains high-level details about the BIDS curation process as it
+  relates to HBCD processing.
+- :doc:`Tool Details <tool_details>`: The links within this page contain automatically rendered information about
+  the different image processing pipelines that are used for HBCD processing. These links also contain information
+  about how we select which files a given pipeline should be exposed to, which arguments are provided to the pipeline,
+  and what the expected outputs are.
+- :doc:`Boutiques Descriptors <boutiques_descriptors>`: This page contains information about Boutiques descriptors,
+  which are the JSON files that tells CBRAIN how a pipeline should be interacted with. A given version of a tool generally
+  has one descriptor, and this descriptor will be used to launch many processing jobs on different subjects. Understanding
+  some of the high-level details behind boutiques descriptors is important for understanding many of the fields in the Tool
+  Details section.
+
 
 .. toctree::
    :maxdepth: 2
