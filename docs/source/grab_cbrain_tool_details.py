@@ -145,6 +145,16 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
             except:
                 f.write(f"     - NA\n")
             f.write(f"     - {escape_rst_special_chars(temp_output['description'])}\n")
+
+        f.write("\n\n\n")
+        f.write("Command Line Template\n")
+        f.write("*********************\n\n")
+        f.write("The following code-snippet highlights how the tool is referenced on the command-line.\n")
+        f.write("The code being displayed is executed within the tool's container. Some of the directives\n")
+        f.write("may describe file manipulations to prepare for processing, and other directives will describe\n")
+        f.write("the primary processing command. At the time of processing, the text in brackets will be replaced\n")
+        f.write("by text that has been provided to configure processing. ::\n\n")
+        f.write("   {}\n\n".format(json_data['command-line']))
         
         comp_proc_recs_dir = '../../comprehensive_processing_prerequisites'
         requirements_files = []
