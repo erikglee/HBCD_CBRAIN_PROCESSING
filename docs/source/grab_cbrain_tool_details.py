@@ -36,6 +36,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
         f.write(f"* **Container**: {json_data["container-image"]["index"] + json_data["container-image"]["image"]}\n")
         if 'url' in json_data.keys():
             f.write(f"* **Documentation**: {json_data['url']}\n")
+        f.write(f"* **Boutiques Descriptor**: {url}\n")
         for temp_key in keys_to_query:
             f.write(f"* **{temp_key}**: {escape_rst_special_chars(json_data[temp_key])}\n")
         f.write("\n\n")
@@ -74,7 +75,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
             f.write("This pipeline utilizes outputs from the following pipelines that\n")
             f.write("are also ran in CBRAIN:\n\n")
             for temp_tool in ancestor_pipelines_dict[tool_name]:
-                f.write(f"- {temp_tool}`\n")
+                f.write(f"- {temp_tool}\n")
             f.write("\n\n")
 
         f.write("Other Processing Settings\n")
