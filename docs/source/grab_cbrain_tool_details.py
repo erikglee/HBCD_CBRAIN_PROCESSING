@@ -254,6 +254,7 @@ def main():
 
 
     make_associated_files_rst()
+    print('Made associated files RST')
 
 if __name__ == "__main__":
     main()
