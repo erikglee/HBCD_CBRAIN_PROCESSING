@@ -217,13 +217,13 @@ def make_associated_files_rst():
         f.write("     - Associated File Term\n")
 
         for temp_key in associated_files.keys():
-            for i, temp_key in enumerate(associated_files[temp_key]):
+            for i, temp_element in enumerate(associated_files[temp_key]):
                 if i == 0:
                     f.write(f"   * - {temp_key}\n")
-                    f.write(f"     - {associated_files[temp_key]}\n")
+                    f.write(f"     - {temp_element}\n")
                 else:
                     f.write(f"   * -   \n")
-                    f.write(f"     - {associated_files[temp_key]}\n")
+                    f.write(f"     - {temp_element}\n")
 
 
 def main():
