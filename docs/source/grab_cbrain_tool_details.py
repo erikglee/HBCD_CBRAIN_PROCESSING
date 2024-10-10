@@ -168,7 +168,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
             f.write("across 'Requirement Groups' must be the same, but which 'File Groups' are defined can be different.\n")
             f.write("If multiple 'Requirement Groups' are present for the current pipeline, there will be multiple tables\n")
             f.write("in this section. Only one 'Requirement Group' needs to be satisfied for processing to occur. If one\n")
-            f.write("requirement group is satisfied, then files from any 'File Group' will be included in processing.\n\n")
+            f.write("requirement group is satisfied, then files from any 'File Group' (across requirement groups) will be included in processing.\n\n")
 
             f.write("Beyond the files chosen from this procedure, associated files defined via the table :doc:`here <../associated_files>` will also\n")
             f.write("be included in processing.\n\n")
