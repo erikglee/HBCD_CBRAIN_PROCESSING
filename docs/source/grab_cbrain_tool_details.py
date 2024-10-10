@@ -94,7 +94,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
         f.write("Following processing, a number of files and folders are identified as outputs\n")
         f.write("that should be saved for future reference. In the following table the 'Path Relative to\n")
         f.write("Working Directory column specifies the location of files that should be saved (with '*'\n")
-        f.write("wildcards). The output location for these files in the final 'DataProvider' is specified\n")
+        f.write("denoting wildcards). The output location for these files in the final 'DataProvider' is specified\n")
         f.write("in the 'Path in Output Data Provider' column. In the case of HBCD the [DERIVATIVES_PREFIX]\n")
         f.write("entry is empty.\n\n")
         f.write(".. list-table::\n")
