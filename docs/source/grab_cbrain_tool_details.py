@@ -90,6 +90,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
         f.write(".. list-table::\n")
         f.write("   :header-rows: 1\n\n")
         f.write("   * - Argument ID\n")
+        f.write("     - Flag\n")
         f.write("     - Value\n")
         f.write("     - Description\n")
         for temp_key in processing_configurations.keys():
@@ -98,9 +99,14 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
                 if temp_input['id'] == temp_key:
                     relevant_input = temp_input
                     description = relevant_input['description'].replace('\n', ' ').replace('\r', '')
+                    if 'flag' in temp_input.keys():
+                        flag = temp_input['flag']
+                    else:
+                        flag = 'n/a'
             if relevant_input is None:
                 raise Exception(f"Could not find input with ID {temp_key} in descriptor")
             f.write(f"   * - {escape_rst_special_chars(temp_key)}\n")
+            f.write(f"     - {escape_rst_special_chars(flag)}\n")
             f.write(f"     - {escape_rst_special_chars(processing_configurations[temp_key])}\n")
             f.write(f"     - {escape_rst_special_chars(description)}\n")
         f.write("\n\n\n\n")
