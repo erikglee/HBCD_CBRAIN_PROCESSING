@@ -55,6 +55,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
         f.write(".. list-table::\n")
         f.write("   :header-rows: 1\n\n")
         f.write("   * - Argument ID\n")
+        f.write("     - Flag\n")
         f.write("     - Value\n")
         f.write("     - Description\n")
         for temp_key in external_requirements.keys():
@@ -62,15 +63,19 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
             for temp_input in json_data['inputs']:
                 if temp_input['id'] == temp_key:
                     relevant_input = temp_input
+                    if 'command-line-flag' in temp_input.keys():
+                        flag = temp_input['command-line-flag']
+                    else:
+                        flag = 'n/a'
             if relevant_input is None:
                 raise Exception(f"Could not find input with ID {temp_key} in descriptor")
-            description = relevant_input['description'].replace('\n', ' ').replace('\r', '')
             f.write(f"   * - {escape_rst_special_chars(temp_key)}\n")
+            f.write(f"   * - {flag}\n")
             if external_requirements[temp_key].isnumeric() and os.path.exists(os.path.join('cbrain_files', external_requirements[temp_key])):
                 f.write(f"     - :download:`{external_requirements[temp_key]} <../cbrain_files/{external_requirements[temp_key]}>`\n")
             else:
                 f.write(f"     - {escape_rst_special_chars(external_requirements[temp_key])}\n")
-            f.write(f"     - {escape_rst_special_chars(description)}\n")
+            f.write(f"     - {escape_rst_special_chars(relevant_input['description'])}\n")
         f.write("\n\n")
         if tool_name in ancestor_pipelines_dict.keys():
             if len(ancestor_pipelines_dict[tool_name]) > 0:
