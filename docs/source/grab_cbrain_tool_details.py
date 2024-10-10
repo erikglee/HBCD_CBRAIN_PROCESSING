@@ -193,8 +193,8 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
                 f.write("be used. If a back-up set of criteria is defined, that will be represented as a second table.\n\n")
                 for temp_key in temp_processing_reqs.keys():
                     if 'qc_criteria' in temp_processing_reqs[temp_key].keys():
-                        f.write(f"{temp_key}     \n")
-                        f.write(f"{'~'*(len(temp_key) + 5)}\n\n")
+                        f.write(f"File Group: {temp_key}\n")
+                        f.write(f"{'~'*(len(temp_key) + 12)}\n\n")
                         if "num_to_keep" in temp_processing_reqs[temp_key].keys():
                             f.write("Processing will look for best {} file(s) to keep using the following criteria.\n\n".format(temp_processing_reqs[temp_key]["num_to_keep"]))
                         else:
