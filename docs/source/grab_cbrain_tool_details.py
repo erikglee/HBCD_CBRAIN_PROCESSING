@@ -139,7 +139,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
             f.write("will be considered for processing. If only one table is seen below,\n")
             f.write("this means the pipeline only has one set of possible requirements.\n\n")
 
-            f.write("Beyond these files, associated files defined via the table :doc:`here <../associated_files>` will also\n")
+            f.write("Beyond the files chosen from this procedure, associated files defined via the table :doc:`here <../associated_files>` will also\n")
             f.write("be included in processing.\n\n")
 
             for filename in requirements_files:
