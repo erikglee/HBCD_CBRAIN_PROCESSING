@@ -73,13 +73,14 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
             f.write(f"     - {escape_rst_special_chars(description)}\n")
         f.write("\n\n")
         if tool_name in ancestor_pipelines_dict.keys():
-            f.write("Ancestor Pipelines\n")
-            f.write("******************\n\n")
-            f.write("This pipeline utilizes outputs from the following pipelines that\n")
-            f.write("are also ran in CBRAIN:\n\n")
-            for temp_tool in ancestor_pipelines_dict[tool_name]:
-                f.write(f"- {temp_tool}\n")
-            f.write("\n\n")
+            if len(ancestor_pipelines_dict[tool_name]) > 0:
+                f.write("Ancestor Pipelines\n")
+                f.write("******************\n\n")
+                f.write("This pipeline utilizes outputs from the following pipelines that\n")
+                f.write("are also ran in CBRAIN:\n\n")
+                for temp_tool in ancestor_pipelines_dict[tool_name]:
+                    f.write(f"- {temp_tool}\n")
+                f.write("\n\n")
 
         f.write("Other Processing Settings\n")
         f.write("*************************\n\n")
