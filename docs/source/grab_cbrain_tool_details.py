@@ -66,7 +66,10 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
                 raise Exception(f"Could not find input with ID {temp_key} in descriptor")
             description = relevant_input['description'].replace('\n', ' ').replace('\r', '')
             f.write(f"   * - {escape_rst_special_chars(temp_key)}\n")
-            f.write(f"     - {escape_rst_special_chars(external_requirements[temp_key])}\n")
+            if external_requirements[temp_key].isnumeric() and os.path.exists(os.path.join('cbrain_files', external_requirements[temp_key])):
+                f.write(f"     - :download:`{external_requirements[temp_key]} <../cbrain_files/{external_requirements[temp_key]}>`\n")
+            else:
+                f.write(f"     - {escape_rst_special_chars(external_requirements[temp_key])}\n")
             f.write(f"     - {escape_rst_special_chars(description)}\n")
         f.write("\n\n")
         if tool_name in ancestor_pipelines_dict.keys():
