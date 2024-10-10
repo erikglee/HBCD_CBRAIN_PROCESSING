@@ -224,6 +224,7 @@ def make_associated_files_rst():
                 else:
                     f.write(f"   * -   \n")
                     f.write(f"     - {temp_element}\n")
+        f.write("\n\n\n")
 
 
 def main():
