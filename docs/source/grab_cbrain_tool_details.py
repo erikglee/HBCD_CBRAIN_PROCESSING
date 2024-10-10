@@ -193,7 +193,8 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
                             f.write("\n\n\n")
 
         f.write(".. toctree::\n")
-        f.write("   :maxdepth: 2\n\n")
+        f.write("   :maxdepth: 2")
+        f.write("   :caption: Related Files\n\n")
         f.write("   ../associated_files\n")
 
 
