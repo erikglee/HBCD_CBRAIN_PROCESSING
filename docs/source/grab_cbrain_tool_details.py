@@ -99,8 +99,8 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
                 if temp_input['id'] == temp_key:
                     relevant_input = temp_input
                     description = relevant_input['description'].replace('\n', ' ').replace('\r', '')
-                    if 'flag' in temp_input.keys():
-                        flag = temp_input['flag']
+                    if 'command-line-flag' in temp_input.keys():
+                        flag = temp_input['command-line-flag']
                     else:
                         flag = 'n/a'
             if relevant_input is None:
