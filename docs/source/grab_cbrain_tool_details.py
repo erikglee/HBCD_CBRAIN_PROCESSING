@@ -132,6 +132,10 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
             f.write("If processing can occur, any files that match any requirements \n")
             f.write("will be considered for processing. If only one table is seen below,\n")
             f.write("this means the pipeline only has one set of possible requirements.\n\n")
+
+            f.write("Beyond these files, associated files defined via the table :doc:`here <associated_files>` will also\n")
+            f.write("be included in processing.\n\n")
+
             for filename in requirements_files:
                 with open(filename, 'r') as f2:
                     temp_processing_reqs = json.load(f2)
@@ -190,7 +194,36 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
 
 
     
-    
+def make_associated_files_rst():
+
+    with open('../../associated_files.json') as f:
+        associated_files = json.load(f)
+
+    with open('associated_files.rst', 'w') as f:
+        f.write("Associated Files\n")
+        f.write("****************\n\n")
+        f.write("During HBCD processing, we search for files with specific names or\n")
+        f.write("quality scores to include in processing. Beyond these files that are\n")
+        f.write("explicitly selected, there are a number of associated files that are implicitly\n")
+        f.write("selected. The following table highlights the convention for this implicit selection.\n")
+        f.write("For any file included in processing, the file selection routines will check if the\n")
+        f.write("file has one of the endings listed in the 'Original File Name Term' column. Then if\n")
+        f.write("a replacement of that term with the entry in the 'Associated File Term' column yields\n")
+        f.write("the name of another file in the BIDS dataset, that file will also be included\n")
+        f.write("during processing.\n\n")
+        f.write(".. list-table::\n")
+        f.write("   :header-rows: 1\n\n")
+        f.write("   * - Original File Name Term\n")
+        f.write("     - Associated File Term\n")
+
+        for temp_key in associated_files.keys():
+            for i, temp_key in enumerate(associated_files[temp_key]):
+                if i == 0:
+                    f.write(f"   * - {temp_key}\n")
+                    f.write(f"     - {associated_files[temp_key]}\n")
+                else:
+                    f.write(f"   * -   \n")
+                    f.write(f"     - {associated_files[temp_key]}\n")
 
 
 def main():
@@ -217,6 +250,9 @@ def main():
         f.write("   :maxdepth: 2\n\n")
         for temp_tool in tools_for_documentation:
             f.write(f"   tools/{temp_tool}\n")
+
+
+    make_associated_files_rst()
 
 if __name__ == "__main__":
     main()
