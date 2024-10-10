@@ -161,7 +161,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
             f.write("contents of a subject's session folder to determine both if processing should occur\n")
             f.write("and also which files should be included in processing. For every pipeline there will be\n")
             f.write("at least one requirement group that determines what files are needed for processing to occur. Within\n")
-            f.write("a requirement group, there may be criteria that adress multiple file (or modality) types, which are known as 'File Groups'.\n")
+            f.write("a requirement group, there may be criteria that address multiple file (or modality) types, which are known as 'File Groups'.\n")
             f.write("For processing to occur, the right amount of files surviving all Included/Excluded\n")
             f.write("terms for a given 'File Group' must be present. To allow for more flexible selection of\n")
             f.write("files for processing, there are often multiple 'Requirement Groups'. The contents of each 'File Group'\n")
