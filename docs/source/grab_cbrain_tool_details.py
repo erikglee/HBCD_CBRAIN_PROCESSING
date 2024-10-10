@@ -70,7 +70,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
             if relevant_input is None:
                 raise Exception(f"Could not find input with ID {temp_key} in descriptor")
             f.write(f"   * - {escape_rst_special_chars(temp_key)}\n")
-            f.write(f"   * - {flag}\n")
+            f.write(f"     - {flag}\n")
             if external_requirements[temp_key].isnumeric() and os.path.exists(os.path.join('cbrain_files', external_requirements[temp_key])):
                 f.write(f"     - :download:`{external_requirements[temp_key]} <../cbrain_files/{external_requirements[temp_key]}>`\n")
             else:
@@ -103,7 +103,6 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
             for temp_input in json_data['inputs']:
                 if temp_input['id'] == temp_key:
                     relevant_input = temp_input
-                    description = relevant_input['description'].replace('\n', ' ').replace('\r', '')
                     if 'command-line-flag' in temp_input.keys():
                         flag = temp_input['command-line-flag']
                     else:
@@ -113,7 +112,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
             f.write(f"   * - {escape_rst_special_chars(temp_key)}\n")
             f.write(f"     - {escape_rst_special_chars(flag)}\n")
             f.write(f"     - {escape_rst_special_chars(processing_configurations[temp_key])}\n")
-            f.write(f"     - {escape_rst_special_chars(description)}\n")
+            f.write(f"     - {escape_rst_special_chars(relevant_input['description'])}\n")
         f.write("\n\n\n\n")
 
         f.write("Pipeline Outputs\n")
