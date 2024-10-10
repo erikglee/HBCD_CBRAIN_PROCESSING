@@ -22,7 +22,7 @@ def escape_rst_special_chars(input_string):
     
     return escaped_string
 
-def generate_rst(json_data, tool_config_id, tool_name, url):
+def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_dict):
     # Example processing: create a new rst file using json data
     keys_to_query = ['name', 'description']
     with open(f'tools/{tool_name}.rst', 'w') as f:
@@ -68,6 +68,14 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
             f.write(f"     - {escape_rst_special_chars(external_requirements[temp_key])}\n")
             f.write(f"     - {escape_rst_special_chars(description)}\n")
         f.write("\n\n")
+        if tool_name in ancestor_pipelines_dict.keys():
+            f.write("Ancestor Pipelines\n")
+            f.write("******************\n\n")
+            f.write("This pipeline utilizes outputs from the following pipelines that\n")
+            f.write("are also ran in CBRAIN:\n\n")
+            for temp_tool in ancestor_pipelines_dict[tool_name]:
+                f.write(f"- {temp_tool}`\n")
+            f.write("\n\n")
 
         f.write("Other Processing Settings\n")
         f.write("*************************\n\n")
@@ -250,6 +258,8 @@ def main():
     print(tools_for_documentation)
     with open('../../tool_config_ids.json') as f:
         tool_config_ids = json.load(f)
+    with open('../../ancestor_pipelines.json') as f:
+        ancestor_pipelines = json.load(f)
 
     os.makedirs('tools')
     for temp_tool in tools_for_documentation:
@@ -257,7 +267,7 @@ def main():
         #with open('tool_details.rst', 'a') as f:
         #    f.write(f"* :doc:`tools/{temp_tool}`\n")
         json_data, url = fetch_json_data(tool_config_ids[temp_tool])
-        generate_rst(json_data, tool_config_ids[temp_tool], temp_tool, url)
+        generate_rst(json_data, tool_config_ids[temp_tool], temp_tool, url, ancestor_pipelines)
 
     with open('tool_details.rst', 'a') as f:
         f.write("\n\n\n")
