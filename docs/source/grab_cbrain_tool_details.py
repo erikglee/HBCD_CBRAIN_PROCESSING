@@ -48,7 +48,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
         f.write("External Requirements\n")
         f.write("*********************\n\n")
         f.write("These are file-based requirements that must be satisfied for processing to occur.\n")
-        f.write('"Argument IDs" correspond to input "id"s within the tool Boutiques Descriptor. "Value"s correspond.\n')
+        f.write('"Argument IDs" correspond to input "id"s within the tool Boutiques Descriptor. "Value"s correspond\n')
         f.write('to either specific configuration files (if there is a numeric value), or otherwise broader file types\n')
         f.write('within CBRAIN (if the entry is text-based).\n\n')
         f.write(".. list-table::\n")
