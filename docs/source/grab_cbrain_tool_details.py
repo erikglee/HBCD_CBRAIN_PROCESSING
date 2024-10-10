@@ -171,7 +171,14 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
             if is_qc_used:
                 f.write("Quality Control Selection Information\n")
                 f.write("**************************************\n\n")
-                f.write("")
+                f.write("The requirements listed in this section are used to determine if processing\n")
+                f.write("should occur and to determine which files are best suited for processing. If a file\n")
+                f.write("group has a table in this section, the file selection procedure will go row-by-row through\n")
+                f.write("the table to evaluate files for processing. The first row is considered the\n")
+                f.write("most important during this procedure, and the last row the least important.\n")
+                f.write("To make a proper comparison, all fields must be defined for all files in a group. In the\n")
+                f.write("case that a field is not defined for at least one file, a backup set ofcriteria may\n")
+                f.write("be used. If a back-up set of criteria is defined, that will be represented as a second table.\n\n")
                 for temp_key in temp_processing_reqs.keys():
                     if 'qc_criteria' in temp_processing_reqs[temp_key].keys():
                         f.write(f"{temp_key}     \n")
@@ -180,10 +187,6 @@ def generate_rst(json_data, tool_config_id, tool_name, url):
                             f.write("Processing will look for best {} file(s) to keep using the following criteria.\n\n".format(temp_processing_reqs[temp_key]["num_to_keep"]))
                         else:
                             f.write("Processing will include all files passing the following criteria.\n\n")
-                        f.write("In some cases certain pipelines will have a backup set of requirements.\n")
-                        f.write("If there are multiple tables below, the second table represent\n")
-                        f.write("requirements that will be used if one or more of the QC criteria is not defined\n")
-                        f.write("in the first table.\n\n")
                         outer_qc_list = temp_processing_reqs[temp_key]['qc_criteria']
                         for j, inner_qc_list in enumerate(outer_qc_list):
                             f.write(".. list-table::\n")
