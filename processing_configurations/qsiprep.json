@@ -1,7 +1,6 @@
 {
     "output_dir_name": "qwerty",
     "output_resolution": "1.7",
-    "fs_license_file": "4323067",
     "AnatModality": "T2w",
     "infant": true,
     "unringing_method": "rpg",
