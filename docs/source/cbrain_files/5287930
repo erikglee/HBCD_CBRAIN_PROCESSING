@@ -1,0 +1,21 @@
+{
+    "HERCULES": {
+        "seqType": "HERCULES",
+        "editTarget": ["GABA","GSH"],
+        "MM3coModel": "freeGauss",
+        "ECCmetab": "1",
+        "SubSpecOrder": [4,2,3,1],
+        "prerequisites": {
+            "files" : "*_acq-hercules_*svs.nii*",
+            "files_ref" : "*_acq-hercules_*ref.nii*"
+        }
+    },
+    "unedited": {
+        "seqType": "unedited",
+        "ECCmetab": "1",
+        "prerequisites": {
+            "files" : "*_acq-shortTE_*svs.nii*",
+            "files_ref" : "*_acq-shortTE_*ref.nii*"
+        }
+    }
+}
