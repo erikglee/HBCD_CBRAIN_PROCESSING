@@ -85,7 +85,7 @@ take the form: ::
 In CBRAIN, these session-specific output folders are
 considered unique "Data Providers". You may see this type
 of information being utilized when you look at the various
-tool descriptions and boutiques descriptors for a given pipeline.: ::
+tool descriptions and boutiques descriptors for a given pipeline: ::
 
    derivatives/ses-<label>
 
@@ -107,7 +107,7 @@ below would be merged to create the third folder: ::
    derivatives/ses-<label>/<pipeline_name>/sub-<label>/...
    derivatives/<pipeline_name>/sub-<label>/...
 
- 
+
 
 .. toctree::
    :maxdepth: 2
