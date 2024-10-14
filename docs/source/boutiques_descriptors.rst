@@ -97,4 +97,47 @@ to output folders that represent the name of the pipeline that was used to gener
 elements being saved generally are folders with the name of the subject being processed, or HTML reports
 that contain the name of the subject being processed.
 
-.... insert details about how CBRAIN sets up the processing directory here ....
+BoutiquesBidsSingleSubjectMaker and other "Custom" modules
+----------------------------------------------------------
+
+All Boutiques descriptors used in HBCD processing have a "custom"
+section of the descriptor that is used to specifiy a number of
+additional modules that CBRAIN uses to adjust data in some way.
+Mostly this includes modifications so that the input/output behaves
+as desired.
+
+The most important of these modules is the "BoutiquesBidsSingleSubjectMaker".
+This module is used to transform a BIDS "subject" folder into a new BIDS "Dataset".
+Because of this, you may see an argument such as [SubjectName] listed in the
+command-line section, but if that argument is also passed through "BoutiquesBidsSingleSubjectMaker",
+then the argument will be transformed into a BIDS Dataset with an empty participants.tsv file
+and dataset_description.json. Therefore the following: ::
+    
+    "command-line" : "pipeline_name [SubjectName]"
+    
+Will be expanded into something like: ::
+    
+    pipeline_name BidsDataset
+
+Where BidsDataset has the following structure: ::
+
+    BidsDataset
+    ├── participants.tsv
+    ├── dataset_description.json
+    ├── sub-<label>
+
+The second most important module is likely the "BoutiquesBidsSubjectFileSelector" module.
+Using this tool, we explicitly choose which files the pipeline should be exposed to
+during processing. This allows us to remove redundant or low quality images that would
+have a negative impact on processing.
+
+Other modules of note include:
+
+ - cbrain:no-run-id-for-outputs
+ - BoutiquesFileTypeVerifier
+ - BoutiquesOutputFileTypeSetter
+ - BoutiquesForcedOutputBrowsePath
+ - BoutiquesTaskLogsCopier
+ - BoutiquesInputSubdirMaker
+
+.... insert more details
