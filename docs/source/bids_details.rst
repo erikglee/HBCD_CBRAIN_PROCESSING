@@ -68,7 +68,46 @@ for processing or instead to decide which data to prioritize for processing. In 
 the scans.tsv file is downloaded and queried to understand which files should be included
 and/or prioritized for processing.
 
+Structure of Processing Outputs
+-------------------------------
 
+Given the longitudinal nature of the HBCD study, we regularly
+have new data coming in for a given subject. To manage ongoing
+processing of data that is continually being added to the
+dataset, the default processing structure sends outputs to
+session-specific folders. For example, the outputs of a pipeline
+take the form: ::
+   
+   #Note! This may not be what you are exposed to as a user...
+   #      read further for more details...
+   derivatives/ses-<label>/<pipeline_name>/sub-<label>/ses-<label>/...
+   
+In CBRAIN, these session-specific output folders are
+considered unique "Data Providers". You may see this type
+of information being utilized when you look at the various
+tool descriptions and boutiques descriptors for a given pipeline.: ::
+
+   derivatives/ses-<label>
+
+In HBCD processing the "Data Providers" generally refer to different
+paths within a single S3 Bucket. For example, the BIDS data, and all
+the session-specific derivatives folders are stored within the same
+S3 bucket, with each being represented as a different "Data Provider".
+
+This partitioning of derivatives into session-specific folders is
+done to ensure the integrity of ongoing processing. For end users
+who are instead interacting with a one-time data dump of the HBCD
+data, the outputs will be re-organized into a single derivatives
+structure that contains the outputs for all sessions worth of
+processing. For example, this means that the first two folders seen
+below would be merged to create the third folder: ::
+
+   #Note! This is what you will see as a user...
+   derivatives/ses-<label>/<pipeline_name>/sub-<label>/...
+   derivatives/ses-<label>/<pipeline_name>/sub-<label>/...
+   derivatives/<pipeline_name>/sub-<label>/...
+
+ 
 
 .. toctree::
    :maxdepth: 2
