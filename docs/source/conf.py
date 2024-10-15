@@ -30,6 +30,15 @@ exclude_patterns = []
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
+# -----------------------------------------------------------------------------
+# sphinxcontrib-bibtex
+# -----------------------------------------------------------------------------
+bibtex_bibfiles = ["../xcp_d/data/boilerplate.bib"]
+bibtex_style = "unsrt"
+bibtex_reference_style = "author_year"
+bibtex_footbibliography_header = ""
+
+
 # If your main document is not index.rst, uncomment and specify it
 # master_doc = 'index'
 
@@ -45,3 +54,4 @@ autodoc_mock_imports = ["nibabel", "matplotlib", "numpy", "ants", "pandas", "sci
 def setup(app):
     # This will run 'generate_docs.py' before the documentation is built
     subprocess.call(["python", "grab_cbrain_tool_details.py"])
+    app.add_js_file("https://cdn.rawgit.com/chrisfilo/zenodo.js/v0.1/zenodo.js")
