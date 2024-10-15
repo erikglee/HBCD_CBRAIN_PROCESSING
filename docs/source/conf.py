@@ -57,4 +57,3 @@ autodoc_mock_imports = ["nibabel", "matplotlib", "numpy", "ants", "pandas", "sci
 def setup(app):
     # This will run 'generate_docs.py' before the documentation is built
     subprocess.call(["python", "grab_cbrain_tool_details.py"])
-    #app.add_js_file("https://cdn.rawgit.com/chrisfilo/zenodo.js/v0.1/zenodo.js")
