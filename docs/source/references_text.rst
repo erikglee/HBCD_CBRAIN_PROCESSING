@@ -1,4 +1,6 @@
 References
-===========
+-----------
 
-.. bibliography::
+.. bibliography:: ./references.bib
+   :style: unsrt
+   :all:
