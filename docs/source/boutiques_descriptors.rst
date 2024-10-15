@@ -131,7 +131,7 @@ Using this tool, we explicitly choose which files the pipeline should be exposed
 during processing. This allows us to remove redundant or low quality images that would
 have a negative impact on processing.
 
-Other modules of note include:
+**Other modules of note include:**
 
  - **cbrain:no-run-id-for-outputs**: This module prevents CBRAIN from appending a task id to the output files.
  - **BoutiquesFileTypeVerifier**: This module ensures that the input file provided to a task has a specific file type.
