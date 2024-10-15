@@ -63,4 +63,4 @@ that may contain information you are interested in.
    bids_details
    tool_details
    boutiques_descriptors
-   references
+   references_text
