@@ -36,7 +36,7 @@ html_static_path = ['_static']
 # -----------------------------------------------------------------------------
 # sphinxcontrib-bibtex
 # -----------------------------------------------------------------------------
-bibtex_bibfiles = ["../xcp_d/data/boilerplate.bib"]
+bibtex_bibfiles = ['references.bib']
 bibtex_style = "unsrt"
 bibtex_reference_style = "author_year"
 bibtex_footbibliography_header = ""
