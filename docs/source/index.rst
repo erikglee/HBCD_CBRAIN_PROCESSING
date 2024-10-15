@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to the processing documentation for the Healthy Brain and Child Development (HBCD) Study!
-=================================================================================================
+Welcome to the Healthy Brain and Child Development (HBCD) Study's Processing Documentation!
+===========================================================================================
 
 .. warning::
     Warning - this documentation is a work in progress
