@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Relevant BIDS Details for HBCD Processing
------------------------------------------
+=========================================
 
 As much as possible, HBCD processing tries to utilize the `Brain
 Imaging Data Structure  <https://bids-specification.readthedocs.io/en/stable/>`_
