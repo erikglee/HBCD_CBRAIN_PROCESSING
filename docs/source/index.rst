@@ -51,8 +51,8 @@ that may contain information you are interested in.
 - :doc:`Boutiques Descriptors <boutiques_descriptors>`: This page contains information about Boutiques descriptors,
   which are the JSON files that tells CBRAIN how a pipeline should be interacted with. A given version of a tool generally
   has one descriptor, and this descriptor will be used to launch many processing jobs on different subjects. Understanding
-  some of the high-level details behind boutiques descriptors is important for understanding many of the fields in the Tool
-  Details section.
+  some of the high-level details behind boutiques descriptors is important for understanding many of the fields in the
+  :doc:`Tool Details <tool_details>` section.
 
 
 .. toctree::
