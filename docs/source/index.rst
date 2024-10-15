@@ -59,7 +59,6 @@ that may contain information you are interested in.
    :maxdepth: 2
    :caption: Contents:
 
-   index
    bids_details
    tool_details
    boutiques_descriptors
