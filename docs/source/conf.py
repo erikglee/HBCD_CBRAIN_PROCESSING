@@ -33,6 +33,11 @@ exclude_patterns = []
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
+html_theme_options = {
+    'display_version': True,  # Shows version info in the header
+    'collapse_navigation': False,  # Helps make the version dropdown more accessible
+}
+
 # -----------------------------------------------------------------------------
 # sphinxcontrib-bibtex
 # -----------------------------------------------------------------------------
