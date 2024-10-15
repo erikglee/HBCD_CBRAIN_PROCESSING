@@ -22,6 +22,8 @@ extensions = [
     'sphinxcontrib.bibtex'
 ]
 
+bibtex_bibfiles = ['references.bib']
+
 templates_path = ['_templates']
 exclude_patterns = []
 
