@@ -137,9 +137,9 @@ Other modules of note include:
  - **BoutiquesFileTypeVerifier**: This module ensures that the input file provided to a task has a specific file type.
    In CBRAIN file types often include groups of files such as "BidsSubject", or "NibabiesOutput"
  - **BoutiquesOutputFileTypeSetter**: The file type to assign to a specific pipeline output. This output file type(s)
-    normally specifies which pipeline was ran to produce the outputs.
+   normally specifies which pipeline was ran to produce the outputs.
  - **BoutiquesForcedOutputBrowsePath**: Used to redirect outputs to a specific location in the output Data Provider.
  - **BoutiquesTaskLogsCopier**: Used to save logs from the task and also a current boutiques descriptor for the tool. See
-    :doc:`here <hidden_proc_details_folder>` for more details.
+   :doc:`here <hidden_proc_details_folder>` for more details.
  - **BoutiquesInputSubdirMaker**: Used to transform an input file/folder into a sub-directory. This is useful for
-    ensuring that input files are where we want them to be during processing.
+   ensuring that input files are where we want them to be during processing.
