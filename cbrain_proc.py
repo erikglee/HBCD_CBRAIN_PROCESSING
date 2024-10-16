@@ -1976,7 +1976,7 @@ def check_if_ancestor_file_selection_is_same(subject_id, session_files, ancestor
                                              bids_bucket = None, bids_prefix = None, bids_bucket_config = None,
                                              session = None, session_agnostic_files = ['sessions.tsv'], associated_files_dict = None,
                                              verbose = False, derivatives_bucket_config = None, derivatives_bucket = None,
-                                             derivatives_bucket_prefix = None, logs_directory = None):
+                                             derivatives_bucket_prefix = None, logs_directory = None, extensions_to_skip = ['.json']):
     
     '''
     Function that assumes there will be a directory named "cbrain_misc"
@@ -2040,6 +2040,10 @@ def check_if_ancestor_file_selection_is_same(subject_id, session_files, ancestor
                         if temp_file.endswith(temp_agnostic):
                             skip_file = True
                             break #dont evaluate the size of session agnostic files
+                    for temp_extension in extensions_to_skip:
+                        if temp_file.endswith(temp_extension):
+                            skip_file = True
+                            break #dont evaluate the size of jsons (or other files with extensions_to_skip)
                     if skip_file == False:
                         if original_s3_metadata[temp_file]['Size'] != current_file_metadata[temp_file]['Size']:
                             print('Chosen file {} has different size ({} vs. now {}) when compared to when {} was ran.'.format(temp_file.split('/')[-1], original_s3_metadata[temp_file]['Size'], current_file_metadata[temp_file]['Size'], temp_pipeline))
