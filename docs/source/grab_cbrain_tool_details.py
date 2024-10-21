@@ -203,6 +203,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
                 f.write(".. list-table::\n")
                 f.write("   :header-rows: 1\n\n")
                 f.write("   * - File Group\n")
+                f.write("     - How Many To Keep\n")
                 f.write("     - Term\n")
                 f.write("     - Included (True)/Excluded (False)\n")
                 for temp_key in temp_processing_reqs.keys():
@@ -213,7 +214,12 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
                     for i, temp_inner_key in enumerate(file_naming_dict.keys()):
                         if i == 0:
                             f.write(f"   * - {escape_rst_special_chars(temp_key)}\n")
+                            if "num_to_keep" in temp_processing_reqs[temp_key].keys():
+                                f.write(f"     - {temp_processing_reqs[temp_key]['num_to_keep']}\n")
+                            else:
+                                f.write(f"     - All\n")
                         else:
+                            f.write(f"   * -   \n")
                             f.write(f"   * -   \n")
                         f.write(f"     - {escape_rst_special_chars(temp_inner_key)}\n")
                         f.write(f"     - {escape_rst_special_chars(file_naming_dict[temp_inner_key])}\n")
