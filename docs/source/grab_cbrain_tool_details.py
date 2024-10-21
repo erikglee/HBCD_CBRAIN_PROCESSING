@@ -215,12 +215,12 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
                         if i == 0:
                             f.write(f"   * - {escape_rst_special_chars(temp_key)}\n")
                             if "num_to_keep" in temp_processing_reqs[temp_key].keys():
-                                f.write(f"   * - {temp_processing_reqs[temp_key]['num_to_keep']}\n")
+                                f.write(f"     - {temp_processing_reqs[temp_key]['num_to_keep']}\n")
                             else:
-                                f.write(f"   * - All\n")
+                                f.write(f"     - All\n")
                         else:
                             f.write(f"   * -   \n")
-                            f.write(f"   * -   \n")
+                            f.write(f"     -   \n")
                         f.write(f"     - {escape_rst_special_chars(temp_inner_key)}\n")
                         f.write(f"     - {escape_rst_special_chars(file_naming_dict[temp_inner_key])}\n")
 
