@@ -209,7 +209,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
                     file_naming_dict = temp_processing_reqs[temp_key]['file_naming']
                     if 'qc_criteria' in temp_processing_reqs[temp_key].keys():
                         is_qc_used = True
-                        qc_criteria_dict[temp_key] = temp_processing_reqs[temp_key]['qc_criteria']
+                        qc_criteria_dict[temp_key] = temp_processing_reqs[temp_key]
                     for i, temp_inner_key in enumerate(file_naming_dict.keys()):
                         if i == 0:
                             f.write(f"   * - {escape_rst_special_chars(temp_key)}\n")
