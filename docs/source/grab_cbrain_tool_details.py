@@ -193,6 +193,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
             f.write("Beyond the files chosen from this procedure, associated files defined via the table :doc:`here <../associated_files>` will also\n")
             f.write("be included in processing.\n\n")
 
+            qc_criteria_dict = {}
             for filename in requirements_files:
                 with open(filename, 'r') as f2:
                     temp_processing_reqs = json.load(f2)
@@ -208,6 +209,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
                     file_naming_dict = temp_processing_reqs[temp_key]['file_naming']
                     if 'qc_criteria' in temp_processing_reqs[temp_key].keys():
                         is_qc_used = True
+                        qc_criteria_dict[temp_key] = temp_processing_reqs[temp_key]['qc_criteria']
                     for i, temp_inner_key in enumerate(file_naming_dict.keys()):
                         if i == 0:
                             f.write(f"   * - {escape_rst_special_chars(temp_key)}\n")
@@ -230,15 +232,15 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
                 f.write("To make a proper comparison, all fields must be defined for all files in a group. In the\n")
                 f.write("case that a field is not defined for at least one file, a backup set ofcriteria may\n")
                 f.write("be used. If a back-up set of criteria is defined, that will be represented as a second table.\n\n")
-                for temp_key in temp_processing_reqs.keys():
-                    if 'qc_criteria' in temp_processing_reqs[temp_key].keys():
+                for temp_key in qc_criteria_dict.keys():
+                    if 'qc_criteria' in qc_criteria_dict[temp_key].keys():
                         f.write(f"File Group: {temp_key}\n")
                         f.write(f"{'~'*(len(temp_key) + 12)}\n\n")
-                        if "num_to_keep" in temp_processing_reqs[temp_key].keys():
+                        if "num_to_keep" in qc_criteria_dict[temp_key].keys():
                             f.write("Processing will look for best {} file(s) to keep using the following criteria.\n\n".format(temp_processing_reqs[temp_key]["num_to_keep"]))
                         else:
                             f.write("Processing will include all files passing the following criteria.\n\n")
-                        outer_qc_list = temp_processing_reqs[temp_key]['qc_criteria']
+                        outer_qc_list = qc_criteria_dict[temp_key]['qc_criteria']
                         for j, inner_qc_list in enumerate(outer_qc_list):
                             f.write(".. list-table::\n")
                             f.write("   :header-rows: 1\n\n")
