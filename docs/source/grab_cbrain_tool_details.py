@@ -243,7 +243,7 @@ def generate_rst(json_data, tool_config_id, tool_name, url, ancestor_pipelines_d
                         f.write(f"File Group: {temp_key}\n")
                         f.write(f"{'~'*(len(temp_key) + 12)}\n\n")
                         if "num_to_keep" in qc_criteria_dict[temp_key].keys():
-                            f.write("Processing will look for best {} file(s) to keep using the following criteria.\n\n".format(qc_criteria_dict[temp_key]["num_to_keep"]))
+                            f.write("Processing will look for best {} file(s) to keep using the following criteria(s).\n\n".format(qc_criteria_dict[temp_key]["num_to_keep"]))
                         else:
                             f.write("Processing will include all files passing the following criteria.\n\n")
                         outer_qc_list = qc_criteria_dict[temp_key]['qc_criteria']
