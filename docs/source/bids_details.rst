@@ -50,8 +50,8 @@ scans.tsv file mean, please refer to the scans.json file.
 The scans.tsv serves as the best source of information about the age of a
 participant at the time of an acquisition. Age information can also be found
 in the sessions.tsv file under the session folder, where "age" represents the
-age of the participant at the first in-person data collection. All "age" measures
-are provided in years with three decimal places, based on a birthdate measure
+age of the participant at the first in-person data collection. The "age" measure
+is provided in years with three decimal places, based on a birthdate measure
 that is jittered up to 7 days.
 
 When processing begins, scripts first examine the S3 structure where the
