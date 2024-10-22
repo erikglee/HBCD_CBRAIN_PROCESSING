@@ -93,9 +93,8 @@ the expected path of the file in the processing directory. After processing is c
 save any files mentioned in the "output-files" section to the appropriate Data Provider (which in HBCD's
 case is a path on a S3 bucket). The "BoutiquesForcedOutputBrowsePath" will determine where the individual
 outputs are placed relative to the root path of the Data Provider. In general, outputs will be routed
-to output folders that represent the name of the pipeline that was used to generate the data. And the output
-elements being saved generally are folders with the name of the subject being processed, or HTML reports
-that contain the name of the subject being processed.
+to output folders that represent the name of the pipeline that was used to generate the data. The outputs
+being saved are generally folders or HTML reports with the name of the subject being processed.
 
 BoutiquesBidsSingleSubjectMaker and other "Custom" modules
 ----------------------------------------------------------
