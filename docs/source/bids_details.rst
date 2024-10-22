@@ -60,9 +60,9 @@ Each pipeline has specific requirements based on the type of processing
 being done (e.g., QSIPREP requires diffusion data, while MADE needs EEG data).
 In certain cases, like Magnetic Resonance Spectroscopy (MRS) and
 Electroencephalography (EEG), the pipeline run in CBRAIN is used to generate
-QC measures. For these, all MRS and EEG data are processed through OSPREY
-and MADE, respectively. In other instances, preliminary QC measures are
-already in place to assess whether the data is of sufficient quality for
+QC measures. In these cases, all files with unknown QC status are fed to the
+pipeline. In other instances, preliminary QC measures
+are already in place to assess whether the data is of sufficient quality for
 processing or to prioritize which data should be processed first. In these
 cases, the scans.tsv file is downloaded and queried to determine which files
 should be included or prioritized for processing.
