@@ -64,8 +64,8 @@ QC measures. In these cases, all files with unknown QC status are fed to the
 pipeline. In other instances, preliminary QC measures
 are already in place to assess whether the data is of sufficient quality for
 processing or to prioritize which data should be processed first. In these
-cases, the scans.tsv file is downloaded and queried to determine which files
-should be included or prioritized for processing.
+cases where QC is available, the scans.tsv file is downloaded and queried
+to determine which files should be included or prioritized for processing.
 
 Structure of Processing Outputs
 -------------------------------
